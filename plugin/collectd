@@ -1,0 +1,18 @@
+#!/bin/bash
+# Install to /etc/default/collectd
+
+# NOTE: If collectd crashes, or exits prematurely without removing the
+# collect-unixsock then, on the next start, collectd fails to initalize. So,
+# remove the stale unix socket here.
+UNIXSOCK="/var/run/collectd-unixsock"
+if test -r "${UNIXSOCK}"; then
+  rm -f "${UNIXSOCK}"
+fi
+# TODO(soltesz): Later versions of collectd have a configuration option to
+# automatically remove the unixsock if it is present. Unfortunately, this is
+# not available in the version available in CentOS 6.
+
+# NOTE: Reset the collectd CONFIG file used by /etc/init.d/collectd. By default,
+# /etc/init.d/collectd uses "/etc/collectd.conf". We reset CONFIG here to use
+# M-Lab specific configuration. So, content in "/etc/collectd.conf" is ignored.
+CONFIG=/etc/collectd-mlab.conf
