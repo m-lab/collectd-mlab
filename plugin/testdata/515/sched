@@ -1,0 +1,7 @@
+FillRate:	       0,1
+Interval:	     100,1000
+TokensMin:	      50
+TokensMax:	     100
+PrioBias:	       0
+cpu 0: 718615 3503035 0 0 0 RI 100 50 100 0/100 1/1000 0 0
+cpu 1: 933425 3720080 0 0 0 RI 100 50 100 0/100 1/1000 0 0

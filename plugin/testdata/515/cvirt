@@ -1,0 +1,8 @@
+BiasUptime:	1500.0
+nr_threads:	19
+nr_running:	0
+nr_unintr:	0
+nr_onhold:	0
+load_updates:	14520434
+loadavg:	0.01 0.03 0.00
+total_forks:	6870
