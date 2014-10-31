@@ -32,7 +32,7 @@ Three packages are created by `make rpm`.
  * `collectd-mlab` -- the primary package that should be installed in the
    mlab_utility slice.
 
- * `collectd-mlab-vsys` -- The vsys package includes the vs_resourc_backend
+ * `collectd-mlab-vsys` -- The vsys package includes the vs_resource_backend
    script and nagios plugin. This should be installed in the host context.
 
  * `collectd-mlab-devel` -- A pseudo package that includes the list of required
