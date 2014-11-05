@@ -293,7 +293,7 @@ def get_self_stats(stat_path):
     stat_fields = stat_file.read().strip().split()
 
   if len(stat_fields) < 24:
-    collectd.info(
+    collectd.warning(
         'mlab: get_self_stats found only %s fields.' % len(stat_fields))
     return self_stats
 
@@ -356,7 +356,7 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
     # Context uptime := (System uptime - BiasUptime)
     submit_vs_uptime(vs_host, sys_uptime - vm_bias)
     submit_threads(vs_host, 'running', vm_running)
-    submit_threads(vs_host, 'other', (vm_threads-vm_running))
+    submit_threads(vs_host, 'other', (vm_threads - vm_running))
 
 
 def report_limits_for_vserver(vs_host, vs_directory):
@@ -590,10 +590,10 @@ def vsys_available():
 def vsys_fifo_exists(path):
   """Checks whether the path name exists and is a FIFO."""
   if not os.path.exists(path):
-    collectd.info('file does not exist: %s' % path)
+    collectd.warning('file does not exist: %s' % path)
     return False
   if not stat.S_ISFIFO(os.stat(path).st_mode):
-    collectd.info('file is not a fifo: %s' % path)
+    collectd.warning('file is not a fifo: %s' % path)
     return False
   return True
 
