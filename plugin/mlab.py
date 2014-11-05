@@ -54,8 +54,8 @@ Dependencies:
 
 import json
 import os
-import socket
 import select
+import socket
 import stat
 import threading
 import time
@@ -64,11 +64,11 @@ import traceback
 # This import is part of collectd runtime, and not a real python module.
 # F0401 means 'cannot import module'.
 try:
-  register_plugin = True
   import collectd  # pylint: disable=F0401
+  should_register_plugin = True
 except ImportError:
   # Allow pydoc.
-  register_plugin = False
+  should_register_plugin = False
 
 
 # Constants.
@@ -99,15 +99,9 @@ _vs_vsys = None
 _vs_xid_names = {}
 
 
-def log(msg, *args):
-  """Prints additional information when _DEBUG is true."""
-  if _DEBUG:
-    print threading.current_thread().name, msg % args
-
-
 def submit_generic(host, plugin, typename, values, type_instance=None,
                    plugin_instance=None):
-  """submit_generic reports a new value to collectd.
+  """Reports a new value to collectd.
 
   Every value is associated with a unique combination of host, plugin,
   typename, and instance parameters.
@@ -325,11 +319,12 @@ def report_quota_for_vserver(vs_host, dlimits):
 
 
 def read_system_uptime():
-  """Parses and returns system uptime as float."""
+  """Parses and returns system uptime as float in seconds."""
   if os.path.exists(_PROC_UPTIME):
     with open(_PROC_UPTIME) as proc_uptime:
       uptime_fields = proc_uptime.read().split()
       return float(uptime_fields[0])
+  collectd.warning('%s does not exist.' % _PROC_UPTIME)
   return 0
 
 
@@ -339,11 +334,9 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
   Args:
     vs_host: str, hostname of vserver context.
     vs_directory: str, path to vserver directory containing 'cvirt' stats.
-    sys_uptime: float, current uptime of whole system. Used to calculate
-        uptime of vserver.
+    sys_uptime: float, current uptime of whole system in seconds. Used to
+        calculate uptime of vserver.
   """
-  # NOTE: nr_uninterruptible is deprecated.
-  # NOTE: nr_onhold is never updated by vserver (always zero).
   cvirt_path = os.path.join(vs_directory, 'cvirt')
   with open(cvirt_path, 'r') as cvirt:
     vm_threads = 0
@@ -351,11 +344,13 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
     vm_bias = 0
     for line in cvirt:
       fields = line.strip().split()
+      # NOTE: nr_uninterruptible is deprecated.
+      # NOTE: nr_onhold is never updated by vserver (always zero).
       if fields[0] == 'nr_threads:':
         vm_threads = int(fields[1])
-      if fields[0] == 'nr_running:':
+      elif fields[0] == 'nr_running:':
         vm_running = int(fields[1])
-      if fields[0] == 'BiasUptime:':
+      elif fields[0] == 'BiasUptime:':
         vm_bias = float(fields[1])
 
     # Context uptime := (System uptime - BiasUptime)
@@ -371,7 +366,6 @@ def report_limits_for_vserver(vs_host, vs_directory):
     vs_host: str, hostname of vserver context.
     vs_directory: str, path to vserver directory containing 'limit' stats.
   """
-  limit_path = os.path.join(vs_directory, 'limit')
   vm_prefix_map = {'VM:': 'vm',
                    'VML:': 'vml',
                    'RSS:': 'rss',
@@ -382,6 +376,7 @@ def report_limits_for_vserver(vs_host, vs_directory):
                     'LOCKS:': 'locks',
                     'SOCK:': 'sockets'}
 
+  limit_path = os.path.join(vs_directory, 'limit')
   with open(limit_path, 'r') as limit:
     _ = limit.readline()  # Discard header.
 
@@ -405,16 +400,25 @@ def report_limits_for_vserver(vs_host, vs_directory):
 def split_network_line(line):
   """Parses line of /proc/virtual/<xid>/cacct for network usage.
 
+  The cacct file has a header followed by usage counts for multiple protocols.
+
+  Header (provided for context):
+    Type      recv #/bytes       send #/bytes       fail #/bytes
+
+  Each protocol's usage counts are formatted like this example:
+    INET:         32/9909               43/253077              0/0
+
   Args:
     line: str, a line of text from cacct file.
   Returns:
-    4-tuple with (recv syscalls, received octets, send syscalls, sent octets).
+    4-tuple of int: representing
+        ('recv' syscalls, received octets, 'send' syscalls, sent octets).
   """
   fields = line.strip().split()
-  rx_pb = fields[1]
-  tx_pb = fields[2]
-  (recv_calls, rx_octets) = rx_pb.split('/')
-  (send_calls, tx_octets) = tx_pb.split('/')
+  receive_field = fields[1]
+  transmit_field = fields[2]
+  (recv_calls, rx_octets) = receive_field.split('/')
+  (send_calls, tx_octets) = transmit_field.split('/')
   return (int(recv_calls), int(rx_octets),
           int(send_calls), int(tx_octets))
 
@@ -431,18 +435,14 @@ def report_network_for_vserver(vs_host, vs_directory):
     _ = cacct.readline()  # Discard header.
 
     for line in cacct:
-      if line[:5] == 'INET:':
-        (recv_calls, rx_octets, send_calls, tx_octets) = (
-            split_network_line(line))
+      (recv_calls, rx_octets, send_calls, tx_octets) = split_network_line(line)
+      if line.startswith('INET:'):
         submit_network_bytes(vs_host, 'ipv4', [rx_octets, tx_octets])
         submit_network_syscalls(vs_host, 'ipv4', [recv_calls, send_calls])
-      elif line[:6] == 'INET6:':
-        (recv_calls, rx_octets, send_calls, tx_octets) = (
-            split_network_line(line))
+      elif line.startswith('INET6:'):
         submit_network_bytes(vs_host, 'ipv6', [rx_octets, tx_octets])
         submit_network_syscalls(vs_host, 'ipv6', [recv_calls, send_calls])
-      elif line[:5] == 'UNIX:':
-        (_, rx_octets, _, tx_octets) = split_network_line(line)
+      elif line.startswith('UNIX:'):
         submit_network_bytes(vs_host, 'unix', [rx_octets, tx_octets])
 
 
@@ -457,7 +457,7 @@ def report_cpuavg_for_system(stat_path):
     return
 
   with open(stat_path, 'r') as stat_file:
-    lines = [ line for line in stat_file if line[:4] == 'cpu ' ]
+    lines = [ line for line in stat_file if line.startswith('cpu ') ]
     if len(lines) == 1:  # There can be only one [cpu avg].
       fields = lines[0].strip().split()
       if len(fields) >= 9:
@@ -487,7 +487,7 @@ def report_cpu_for_vserver(vs_host, vs_directory):
     _ = sched.readline()  # Discard header.
 
     for line in sched:
-      if line[:3] == 'cpu':
+      if line.startswith('cpu'):
         fields = line.split()
         total['user'] += int(fields[2])
         total['system'] += int(fields[3])
@@ -887,7 +887,7 @@ def plugin_shutdown():
   collectd.info('Shutting down collectd-mlab plugin.')
 
 
-if register_plugin:
+if should_register_plugin:
   # Register callbacks. Order is important.
   collectd.register_config(plugin_configure)
   collectd.register_init(plugin_initialize)
