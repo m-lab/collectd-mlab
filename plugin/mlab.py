@@ -285,13 +285,15 @@ def get_self_stats(stat_path):
   self_stats = {'utime': 0, 'stime': 0, 'vsize': 0, 'rss': 0}
 
   if not os.path.exists(stat_path):
+    collectd.error(
+        'mlab: get_self_stats stat path does not exist: %s' % stat_path)
     return {}
 
   with open(stat_path, 'r') as stat_file:
     stat_fields = stat_file.read().strip().split()
 
   if len(stat_fields) < 24:
-    collectd.warning(
+    collectd.error(
         'mlab: get_self_stats found only %s fields.' % len(stat_fields))
     return {}
 
@@ -322,7 +324,7 @@ def read_system_uptime():
     with open(_PROC_UPTIME) as proc_uptime:
       uptime_fields = proc_uptime.read().split()
       return float(uptime_fields[0])
-  collectd.warning('%s does not exist.' % _PROC_UPTIME)
+  collectd.error('read_system_uptime: %s does not exist.' % _PROC_UPTIME)
   return 0
 
 
@@ -593,10 +595,10 @@ def vsys_available():
 def vsys_fifo_exists(path):
   """Checks whether the path name exists and is a FIFO."""
   if not os.path.exists(path):
-    collectd.warning('file does not exist: %s' % path)
+    collectd.error('File does not exist: %s' % path)
     return False
   if not stat.S_ISFIFO(os.stat(path).st_mode):
-    collectd.warning('file is not a fifo: %s' % path)
+    collectd.error('File is not a fifo: %s' % path)
     return False
   return True
 
