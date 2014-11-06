@@ -74,7 +74,9 @@ except ImportError:
 # "Number of processors online"
 _CPU_COUNT = os.sysconf(os.sysconf_names['SC_NPROCESSORS_ONLN'])
 _PAGESIZE = os.sysconf(os.sysconf_names['SC_PAGESIZE'])
-# _USER_HZ = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
+_USER_HZ = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
+_CONFIG_HZ = 1000.0  # NOTE: This must match the kernel config value.
+_SCALE_HZ = _CONFIG_HZ / _USER_HZ
 _PLUGIN_PATH = '/var/lib/collectd/python'
 _POLL_TIMEOUT_SEC = 10
 _PROC_PID_STAT = None
@@ -183,9 +185,9 @@ def submit_vserver_cputotal(vs_host, type_instance, value):
   # NOTE: VServer scheduling counters are measured in scheduler ticks,
   # e.g. CONFIG_HZ (1/1000th of sec). Most Linux system counters use USER_HZ
   # (1/100th of sec). Values in USER_HZ units approximate a percentage. Here
-  # the raw VServer value is divided by 10 to convert units to 1/100th sec,
-  # so VServer cpu usage are comparable to system cpu values.
-  submit_generic(vs_host, 'cpu_total', 'vs_cpu', value/10.0, type_instance)
+  # the raw VServer value is divided by _SCALE_HZ to convert units to 1/100th
+  # sec, so VServer cpu usage will be comparable to system cpu values.
+  submit_generic(vs_host, 'cpu_total', 'vs_cpu', value/_SCALE_HZ, type_instance)
 
 
 def submit_vserver_network_bytes(vs_host, type_instance, values):
