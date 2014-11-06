@@ -476,6 +476,9 @@ def report_cpuavg_for_system(stat_path):
         submit_cputotal('interrupt', int(fields[6]))
         submit_cputotal('softirq', int(fields[7]))
         submit_cputotal('steal', int(fields[8]))
+      else:
+        collectd.warning('Found too few fields (%s) in stat file: %s' % (
+            len(fields), stat_path))
 
   submit_cpucores()
 
