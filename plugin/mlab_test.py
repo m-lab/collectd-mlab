@@ -562,18 +562,14 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
 
     stats = mlab.get_self_stats(test_stat_path)
 
-    self.assertEqual(stats['stime'], 0)
-    self.assertEqual(stats['utime'], 0)
-    self.assertEqual(stats['vsize'], 0)
+    self.assertEqual(stats, {})
 
   def testunit_get_self_stats_WHEN_bad_stat_data(self):
     test_stat_path = os.path.join(self._testdata_dir, 'stat_wrong')
 
     stats = mlab.get_self_stats(test_stat_path)
 
-    self.assertEqual(stats['stime'], 0)
-    self.assertEqual(stats['utime'], 0)
-    self.assertEqual(stats['vsize'], 0)
+    self.assertEqual(stats, {})
 
   def testunit_read_system_uptime(self):
     mlab._PROC_UPTIME = os.path.join(self._testdata_dir, 'uptime')

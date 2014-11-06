@@ -285,7 +285,7 @@ def get_self_stats(stat_path):
   self_stats = {'utime': 0, 'stime': 0, 'vsize': 0, 'rss': 0}
 
   if not os.path.exists(stat_path):
-    return self_stats
+    return {}
 
   with open(stat_path, 'r') as stat_file:
     stat_fields = stat_file.read().strip().split()
@@ -293,7 +293,7 @@ def get_self_stats(stat_path):
   if len(stat_fields) < 24:
     collectd.warning(
         'mlab: get_self_stats found only %s fields.' % len(stat_fields))
-    return self_stats
+    return {}
 
   self_stats['utime'] = (
       float(stat_fields[index_utime]) + float(stat_fields[index_cutime]))
