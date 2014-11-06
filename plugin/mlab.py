@@ -339,9 +339,9 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
   """
   cvirt_path = os.path.join(vs_directory, 'cvirt')
   with open(cvirt_path, 'r') as cvirt:
-    vm_threads = 0
-    vm_running = 0
-    vm_bias = 0
+    vm_threads = None
+    vm_running = None
+    vm_bias = None
     for line in cvirt:
       fields = line.strip().split()
       # NOTE: nr_uninterruptible is deprecated.
@@ -354,9 +354,11 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
         vm_bias = float(fields[1])
 
     # Context uptime := (System uptime - BiasUptime)
-    submit_vserver_uptime(vs_host, sys_uptime - vm_bias)
-    submit_vserver_threads(vs_host, 'running', vm_running)
-    submit_vserver_threads(vs_host, 'other', (vm_threads - vm_running))
+    if vm_bias is not None:
+      submit_vserver_uptime(vs_host, sys_uptime - vm_bias)
+    if vm_running is not None and vm_threads is not None:
+      submit_vserver_threads(vs_host, 'running', vm_running)
+      submit_vserver_threads(vs_host, 'other', (vm_threads - vm_running))
 
 
 def report_limits_for_vserver(vs_host, vs_directory):
