@@ -57,7 +57,6 @@ import os
 import select
 import socket
 import stat
-import threading
 import time
 import traceback
 
@@ -82,7 +81,6 @@ _PROC_PID_STAT = None
 _PROC_STAT = '/proc/stat'
 _PROC_UPTIME = '/proc/uptime'
 _PROC_VIRTUAL = '/proc/virtual'
-_DEBUG = False
 _READ_BLOCK_SIZE = 1024
 
 # VSys constants.
@@ -180,7 +178,7 @@ def submit_meta_cpu(plugin_instance, type_instance, value):
                  plugin_instance)
 
 
-def submit_vs_cputotal(vs_host, type_instance, value):
+def submit_vserver_cputotal(vs_host, type_instance, value):
   """Reports vserver total CPU usage to collectd."""
   # NOTE: VServer scheduling counters are measured in scheduler ticks,
   # e.g. CONFIG_HZ (1/1000th of sec). Most Linux system counters use USER_HZ
@@ -190,38 +188,38 @@ def submit_vs_cputotal(vs_host, type_instance, value):
   submit_generic(vs_host, 'cpu_total', 'vs_cpu', value/10.0, type_instance)
 
 
-def submit_network_bytes(vs_host, type_instance, values):
+def submit_vserver_network_bytes(vs_host, type_instance, values):
   """Reports vserver network bytes to collectd."""
   submit_generic(vs_host, 'network', 'if_octets', values, type_instance)
 
 
-def submit_network_syscalls(vs_host, type_instance, values):
+def submit_vserver_network_syscalls(vs_host, type_instance, values):
   """Reports vserver network system calls to collectd."""
   submit_generic(
       vs_host, 'network', 'vs_network_syscalls', values, type_instance)
 
 
-def submit_memory(vs_host, type_instance, value):
+def submit_vserver_memory(vs_host, type_instance, value):
   """Reports vserver memory usage to collectd."""
   submit_generic(vs_host, 'memory', 'vs_memory', value, type_instance)
 
 
-def submit_quota(vs_host, type_instance, values):
+def submit_vserver_quota(vs_host, type_instance, values):
   """Reports vserver storage quota usage to collectd."""
   submit_generic(vs_host, 'storage', 'vs_quota_bytes', values, type_instance)
 
 
-def submit_vs_uptime(vs_host, value):
+def submit_vserver_uptime(vs_host, value):
   """Reports vserver uptime to collectd."""
   submit_generic(vs_host, 'context', 'vs_uptime', value)
 
 
-def submit_vlimit(vs_host, type_instance, value):
+def submit_vserver_limit(vs_host, type_instance, value):
   """Reports vserver vlimit metrics to collectd."""
   submit_generic(vs_host, 'context', 'vs_vlimit', value, type_instance)
 
 
-def submit_threads(vs_host, type_instance, value):
+def submit_vserver_threads(vs_host, type_instance, value):
   """Reports vserver thread metrics to collectd."""
   submit_generic(vs_host, 'context', 'vs_threads_basic', value, type_instance)
 
@@ -315,7 +313,7 @@ def report_quota_for_vserver(vs_host, dlimits):
   """
   quota_free = 1000 * (dlimits[1] - dlimits[0])
   quota_used = 1000 * dlimits[0]
-  submit_quota(vs_host, 'quota', [quota_used, quota_free])
+  submit_vserver_quota(vs_host, 'quota', [quota_used, quota_free])
 
 
 def read_system_uptime():
@@ -354,9 +352,9 @@ def report_threads_for_vserver(vs_host, vs_directory, sys_uptime):
         vm_bias = float(fields[1])
 
     # Context uptime := (System uptime - BiasUptime)
-    submit_vs_uptime(vs_host, sys_uptime - vm_bias)
-    submit_threads(vs_host, 'running', vm_running)
-    submit_threads(vs_host, 'other', (vm_threads - vm_running))
+    submit_vserver_uptime(vs_host, sys_uptime - vm_bias)
+    submit_vserver_threads(vs_host, 'running', vm_running)
+    submit_vserver_threads(vs_host, 'other', (vm_threads - vm_running))
 
 
 def report_limits_for_vserver(vs_host, vs_directory):
@@ -389,12 +387,12 @@ def report_limits_for_vserver(vs_host, vs_directory):
       if fields[0] in sys_prefix_map:
         sys_value = float(fields[1])
         type_instance = sys_prefix_map[fields[0]]
-        submit_vlimit(vs_host, type_instance, sys_value)
+        submit_vserver_limit(vs_host, type_instance, sys_value)
 
       elif fields[0] in vm_prefix_map:
         vm_value = float(fields[1]) * _PAGESIZE
         type_instance = vm_prefix_map[fields[0]]
-        submit_memory(vs_host, type_instance, vm_value)
+        submit_vserver_memory(vs_host, type_instance, vm_value)
 
 
 def split_network_line(line):
@@ -435,15 +433,20 @@ def report_network_for_vserver(vs_host, vs_directory):
     _ = cacct.readline()  # Discard header.
 
     for line in cacct:
+      if not (line.startswith('INET:') or line.startswith('INET6:') or
+              line.startswith('UNIX:')):
+        continue
       (recv_calls, rx_octets, send_calls, tx_octets) = split_network_line(line)
       if line.startswith('INET:'):
-        submit_network_bytes(vs_host, 'ipv4', [rx_octets, tx_octets])
-        submit_network_syscalls(vs_host, 'ipv4', [recv_calls, send_calls])
+        submit_vserver_network_bytes(vs_host, 'ipv4', [rx_octets, tx_octets])
+        submit_vserver_network_syscalls(
+            vs_host, 'ipv4', [recv_calls, send_calls])
       elif line.startswith('INET6:'):
-        submit_network_bytes(vs_host, 'ipv6', [rx_octets, tx_octets])
-        submit_network_syscalls(vs_host, 'ipv6', [recv_calls, send_calls])
+        submit_vserver_network_bytes(vs_host, 'ipv6', [rx_octets, tx_octets])
+        submit_vserver_network_syscalls(
+            vs_host, 'ipv6', [recv_calls, send_calls])
       elif line.startswith('UNIX:'):
-        submit_network_bytes(vs_host, 'unix', [rx_octets, tx_octets])
+        submit_vserver_network_bytes(vs_host, 'unix', [rx_octets, tx_octets])
 
 
 def report_cpuavg_for_system(stat_path):
@@ -493,11 +496,11 @@ def report_cpu_for_vserver(vs_host, vs_directory):
         total['system'] += int(fields[3])
         total['onhold'] += int(fields[4])
 
-  submit_vs_cputotal(vs_host, 'user', total['user'])
-  submit_vs_cputotal(vs_host, 'system', total['system'])
+  submit_vserver_cputotal(vs_host, 'user', total['user'])
+  submit_vserver_cputotal(vs_host, 'system', total['system'])
   # A context is 'onhold' if it uses all its scheduling tokens.
   # On a normal system, 'onhold' is expected to be zero.
-  submit_vs_cputotal(vs_host, 'onhold', total['onhold'])
+  submit_vserver_cputotal(vs_host, 'onhold', total['onhold'])
 
 
 def init_vserver_xid_names():
