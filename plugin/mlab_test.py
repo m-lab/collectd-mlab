@@ -496,15 +496,6 @@ class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
-  @mock.patch('sys.stdout')
-  def testcover_log(self, mock_stdout):
-    mlab._DEBUG = True
-    message = 'fake message'
-
-    mlab.log(message)
-
-    self.assertTrue(message in str(mock_stdout.mock_calls))
-
   @mock.patch('mlab.collectd.info')
   def testcover_plugin_shutdown(self, mock_info):
     # Nothing to test now. But, if new logic is added to shutdown, these tests
