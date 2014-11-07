@@ -1,0 +1,9 @@
+process_cpu		value:DERIVE:0:4294967295
+process_memory		value:GAUGE:0:4294967295
+timer			value:GAUGE:0:U
+vs_cpu			value:DERIVE:0:4294967295
+vs_network_syscalls	recv:COUNTER:0:4294967295, send:COUNTER:0:4294967295
+vs_quota_bytes		used:GAUGE:0:4294967295, free:GAUGE:0:4294967295
+vs_threads_basic	value:GAUGE:0:65535
+vs_uptime		value:GAUGE:0:4294967295
+vs_vlimit		value:GAUGE:0:4294967295
