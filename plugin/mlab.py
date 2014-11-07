@@ -66,7 +66,9 @@ try:
   import collectd  # pylint: disable=F0401
   should_register_plugin = True
 except ImportError:
-  # Allow pydoc.
+  # Since collectd is not a real python module, catching ImportError allows
+  # pydoc to run. Setting should_register_plugin=False prevents the module from
+  # trying to register callback methods (e.g. configure, read) with collectd.
   should_register_plugin = False
 
 
