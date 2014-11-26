@@ -532,10 +532,6 @@ def read_vsys_data(command, version):
   Returns:
     dict, results of 'command'.
   """
-  if not vsys_available():
-    raise VsysException(
-        'vsys is not available. does this slice have the vsys attribute?.')
-
   # Send request through vsys (for slice context).
   data = read_vsys_data_direct(command)
 
@@ -594,11 +590,6 @@ def read_vsys_data_direct(command):
     return {}
 
   return data
-
-
-def vsys_available():
-  """Returns boolean indicating whether /vsys/ target is available."""
-  return os.path.exists('/vsys/%s.out' % _VSYS_FRONTEND_TARGET)
 
 
 def vsys_fifo_exists(path):

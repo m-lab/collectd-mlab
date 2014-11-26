@@ -622,49 +622,32 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
-  def testunit_vsys_available_RETURNS_False(self):
-    self.assertFalse(mlab.vsys_available())
-
   def testunit_vsys_fifo_exists_WHEN_given_regular_file_RETURNS_False(self):
     filename = os.path.join(self._testdata_dir, 'uptime')
 
     self.assertFalse(mlab.vsys_fifo_exists(filename))
 
-  @mock.patch('mlab.vsys_available')
-  def testunit_read_vsys_data_RAISES_VsysException(
-      self, mock_vsys_available):
-    mock_vsys_available.return_value = False
-
-    self.assertRaises(
-        mlab.VsysException, mlab.read_vsys_data, 'backend_stats', 1)
-
-  @mock.patch('mlab.vsys_available')
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_missing_data_RETURNS_empty_result(
-      self, mock_read_vsys_data_direct, mock_vsys_available):
-    mock_vsys_available.return_value = True
+      self, mock_read_vsys_data_direct):
     mock_read_vsys_data_direct.return_value = {'version': 1} 
     
     returned_value = mlab.read_vsys_data('fake_script', 1)
 
     self.assertEqual(returned_value, {})
 
-  @mock.patch('mlab.vsys_available')
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_missing_version_RETURNS_empty_result(
-      self, mock_read_vsys_data_direct, mock_vsys_available):
-    mock_vsys_available.return_value = True
+      self, mock_read_vsys_data_direct):
     mock_read_vsys_data_direct.return_value = {'data': {'rss': 2957312}}
     
     returned_value = mlab.read_vsys_data('fake_script', 2)
 
     self.assertEqual(returned_value, {})
 
-  @mock.patch('mlab.vsys_available')
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_wrong_message_type_RETURNS_empty_result(
-      self, mock_read_vsys_data_direct, mock_vsys_available):
-    mock_vsys_available.return_value = True
+      self, mock_read_vsys_data_direct):
     mock_read_vsys_data_direct.return_value = {
         'data': 'x', 'version': 2, 'message_type': 'not_fake_script'}
     
@@ -672,11 +655,9 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     self.assertEqual(returned_value, {})
 
-  @mock.patch('mlab.vsys_available')
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_wrong_version_RETURNS_data_anyway(
-      self, mock_read_vsys_data_direct, mock_vsys_available):
-    mock_vsys_available.return_value = True
+      self, mock_read_vsys_data_direct):
     mock_read_vsys_data_direct.return_value = {'data': 'x', 'version': 1}
     
     returned_value = mlab.read_vsys_data('fake_script', 2)
@@ -931,10 +912,8 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
   # NOTE: this is the largest most comprehensive, end-to-end test of everything.
   # So, setup is more involved, and the minimum objects are patched.
   @mock.patch('mlab.collectd.Values', new=FakeValues)
-  @mock.patch('mlab.vsys_available')
-  def testintegration_plugin_read(self, mock_vsys_available):
+  def testintegration_plugin_read(self):
     FakeValues.setup()
-    mock_vsys_available.return_value = True
     mlab._PROC_PID_STAT = os.path.join(self._testdata_dir, 'proc_pid_stat')
     mlab._PROC_STAT = os.path.join(self._testdata_dir, 'proc_stat')
     mlab._PROC_UPTIME = os.path.join(self._testdata_dir, 'uptime')
