@@ -536,11 +536,11 @@ def read_vsys_data(command, version):
   data = read_vsys_data_direct(command)
 
   if 'data' not in data:
-    collectd.error('%s: returned value has no "data".' % command)
+    collectd.error('%s: returned value has no "data" field.' % command)
     return {}
 
   if 'version' not in data:
-    collectd.error('%s: returned value has no "version".' % command)
+    collectd.error('%s: returned value has no "version" field.' % command)
     return {}
 
   if 'message_type' in data and data['message_type'] != command:
