@@ -888,17 +888,22 @@ def plugin_read(unused_input_data=None):
 def parse_config(config, depth=0):
   """Parses collectd configuration given to 'configure' handler.
 
-  Assigns global _config_exclude_slices for any ExcludeSlice directives.
+  Also saves ExcludeSlice settings in global _config_exclude_slices.
+
+  Args:
+    depth: int, used for padding in logging. Config is a nested structure,
+        and parse_config is called recursively. Depth tracks how far the
+        recursion has progressed.
   """
-  prefix = '  ' * depth
+  padding = '  ' * depth
   if config.key == 'ExcludeSlice':
     if len(config.values) > 0:
-      collectd.info("%sExcluding %s" % (prefix, str(config.values[0])))
+      collectd.info("%sExcluding %s" % (padding, str(config.values[0])))
       _config_exclude_slices[config.values[0]] = True
 
-  collectd.info("%s%s %s" % (prefix, str(config.key), str(config.values)))
+  collectd.info("%s%s %s" % (padding, str(config.key), str(config.values)))
   if len(config.children) > 0:
-    collectd.info("%schildren:" % prefix)
+    collectd.info("%schildren:" % padding)
     for child in config.children:
       parse_config(child, depth+1)
 
