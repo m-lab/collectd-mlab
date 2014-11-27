@@ -897,13 +897,15 @@ def parse_config(config, depth=0):
   """
   padding = '  ' * depth
   if config.key == 'ExcludeSlice':
-    if len(config.values) > 0:
-      collectd.info("%sExcluding %s" % (padding, str(config.values[0])))
+    if len(config.values) == 1:
+      collectd.info('%sExcluding slice %s' % (padding, str(config.values[0])))
       _config_exclude_slices[config.values[0]] = True
+    else:
+      collectd.warning('%sIgnoring directive: %s %s' % (
+          prefix, config.key, config.values))
 
-  collectd.info("%s%s %s" % (padding, str(config.key), str(config.values)))
   if len(config.children) > 0:
-    collectd.info("%schildren:" % padding)
+    collectd.info('%sChildren:' % padding)
     for child in config.children:
       parse_config(child, depth+1)
 
