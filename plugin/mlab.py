@@ -708,9 +708,9 @@ class VsysFrontend(object):
     Raises:
       VsysOpenException when an error occurs opening FIFOs.
     """
-    # NOTE: caller MUST open writer BEFORE opening reader.
-    self._setup_writer()
-    self._setup_reader()
+    # NOTE: caller MUST open for writing BEFORE opening for reading.
+    self._fd_out = self._open_fifo(self._path_in, os.O_WRONLY)
+    self._fd_in = self._open_fifo(self._path_out, os.O_RDONLY)
 
   def close(self):
     """Closes the vsys file descriptors."""
@@ -734,36 +734,30 @@ class VsysFrontend(object):
     self._send(message)
     return self._recv(timeout).strip()
 
-  def _setup_writer(self):
-    """Opens the vsys write file descriptor or raises VsysOpenException."""
+  def _open_fifo(self, path, flags):
+    """Opens the vsys FIFO using given flags or raises VsysOpenException.
 
-    collectd.info('Opening: %s' % self._path_in)
-    flags = os.O_WRONLY
+    If self._open_nonblock is True, then os.O_NONBLOCK is added to flags.
+
+    Args:
+      path: str, path to a vsys FIFO.
+      flags: int, flags to use when opening path with os.open.
+    Returns:
+      int, file descriptor for FIFO.
+    """
+    collectd.info('Opening: %s' % path)
     if self._open_nonblock:
-      # NOTE: Open non-blocking, to detect when there is no reader.
+      # NOTE: Open non-blocking, to detect when there is no reader. Or, so
+      # reads can timeout using select or poll.
       flags |= os.O_NONBLOCK
 
     try:
-      self._fd_out = os.open(self._path_in, flags)
+      return os.open(path, flags)
     except OSError as err:
-      # The most likely case is errno.ENXIO. ENXIO occurs when no reader
-      # has the other end open. e.g. when vsys is not running in root context.
-      raise VsysOpenException(
-          'Opening vsys fifo (%s) failed: %s' % (self._path_in, err))
-
-  def _setup_reader(self):
-    """Opens the vsys read file descriptor or raises VsysOpenException."""
-
-    flags = os.O_RDONLY
-    if self._open_nonblock:
-      # NOTE: open non blocking, so reads can timeout with select or poll.
-      flags |= os.O_NONBLOCK
-
-    try:
-      self._fd_in = os.open(self._path_out, flags)
-    except OSError as err:
-      raise VsysOpenException(
-          'Opening vsys fifo (%s) failed: %s' % (self._path_out, err))
+      # If opening for write, the error is likely errno.ENXIO. ENXIO occurs
+      # when no reader has the other end open. e.g. when vsys is not running in
+      # root context.
+      raise VsysOpenException('Opening vsys fifo (%s) failed: %s' % (path, err))
 
   def _send(self, message):
     """Sends message to backend. On error, raises VsysException."""
