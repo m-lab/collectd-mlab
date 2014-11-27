@@ -700,7 +700,7 @@ class VsysFrontend(object):
     if (not vsys_fifo_exists(self._path_in) or
         not vsys_fifo_exists(self._path_out)):
       raise VsysCreateException(
-          'vsys paths do not found: %s, %s' % (self._path_in, self._path_out))
+          'vsys FIFOs not found: %s, %s' % (self._path_in, self._path_out))
 
   def open(self):
     """Opens the vsys frontend.
