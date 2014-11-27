@@ -863,7 +863,7 @@ def plugin_read(unused_input_data=None):
       continue
 
     if entry not in _vs_xid_names:
-      init_vserver_xid_names()  # Try reloading names to get new vs_names.
+      init_vserver_xid_names()  # Try reloading names to get new vserver names.
       # Skip, if still not present.
       if entry not in _vs_xid_names:
         collectd.error(('mlab: no vserver name found for xid %s after '
@@ -877,7 +877,6 @@ def plugin_read(unused_input_data=None):
 
     vs_host = slicename_to_hostname(vs_name)
 
-    # Collectd catches stray exceptions.
     report_cpu_for_vserver(vs_host, entry_path)
     report_network_for_vserver(vs_host, entry_path)
     report_limits_for_vserver(vs_host, entry_path)
