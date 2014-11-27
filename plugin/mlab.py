@@ -825,7 +825,19 @@ class VsysFrontend(object):
 
 
 def slicename_to_hostname(vs_name):
-  """Converts a vserver slice name into a canonical FQDN."""
+  """Converts a vserver slice name into a canonical FQDN.
+
+  Slice names use a pattern like: <some site>_<some name>.
+
+  Example:
+    If vs_name is 'mlab_utility' and the system hostname is
+    'mlab4.nuq01.measurement-lab.org', then slicename_to_hostname will return
+    'utility.mlab.mlab4.nuq01.measurement-lab.org'.
+  Args:
+    vs_name: str, name of a vserver slice, e.g. mlab_utility.
+  Returns:
+    str, the canonical FQDN based on system hostname and slice name.
+  """
   fields = vs_name.split('_')
   if len(fields) == 1:
     prefix = vs_name
