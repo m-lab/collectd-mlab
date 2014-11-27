@@ -808,7 +808,7 @@ class VsysFrontend(object):
         # newline, the backend is either very slow, or broken in another way.
         # Complete reads should happen quickly, so raise an exception to signal
         # the issue.
-        raise VsysException("vsys reader readline failed: %s" % err)
+        raise VsysException('vsys reader readline failed: %s' % err)
 
       if not val:
         # NOTE: Premature EOF; the backend may have crashed or been killed.
