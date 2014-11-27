@@ -620,34 +620,45 @@ class VsysOpenException(VsysException):
   """This exception is raised when an error occurs during open."""
 
 
-def get_vsys_fifo_names(target):
-  """Returns a tuple with the vsys (target.in, target.out) filenames."""
-  return (_VSYS_FMT_IN % target, _VSYS_FMT_OUT % target)
+def get_vsys_fifo_names(backend):
+  """Returns a tuple with the vsys (backend.in, backend.out) filenames."""
+  return (_VSYS_FMT_IN % backend, _VSYS_FMT_OUT % backend)
 
 
 class VsysFrontend(object):
-  """VsysFrontend manages interaction with a PlanetLab Vsys target.
+  """VsysFrontend manages interaction with a PlanetLab Vsys backend.
 
-  An overview of Vsys and this class follow. But, to fully understand Vsys,
-  please see official docs at: http://www.sapanbhatia.org/vsys/docs/
+  An overview of Vsys and this class follow. But, please, also see the official
+  docs for Vsys for more information: http://www.sapanbhatia.org/vsys/docs/
 
-  # Overview
+  # Vsys Overview
 
-  Processes in a slice context communicate with the Vsys backend using two
-  named pipes (FIFO files). These two FIFO files are the Vsys "frontend" for a
-  single Vsys "target". A target represents some command that will be run by
-  the backend which a process can communicate with via the frontend.
+  Processes in a slice context can execute and communicate with whitelisted
+  processes in the host context using Vsys. The process in the slice context is
+  the Vsys "frontend", and the process in the host context is the Vsys
+  "backend." The frontend and backend processes communicate through two named
+  pipes (FIFO files) in the slice filesystem.
+  
+  Vsys FIFO files are located in /vsys/. For a single backend, the FIFOs are
+  named /vsys/<backend>.in and /vsys/<backend>.out.
 
-  Within the slice filesystem, Vsys FIFO files are located in /vsys/. For a
-  single target, the FIFOs are named /vsys/<target>.in and /vsys/<target>.out.
+    <backend>.in corresponds to the backend process standard input (read).
+    <backend>.out corresponds to the backend process standard output (write).
 
-    <target>.in corresponds to the backend process standard input (read).
-    <target>.out corresponds to the backend process standard output (write).
-
-  To communicate with the backend process, a process will open <target>.in for
-  writing, and <target>.out for reading.
+  In normal operation, the frontend opens <backend>.in for writing, and
+  <backend>.out for reading. Vsys recognizes that the opens have occurred,
+  executes the backend process, and connects standard input and output of the
+  backend to the correct FIFOs already opened by the the frontend.
 
   # VsysFrontend Class
+
+  Vsys does not specify how frontend and backend communicate once both
+  processes are running. Also, the backend could exit immediately or be
+  long-lived.
+
+  The VsysFrontend class expects the backend process to be long-lived and to
+  read commands terminated by a new line from standard input, and to return
+  responses terminated by a new line on standard output.
 
   VsysFrontend is not thread safe. Only one caller should use a VsysFrontend
   instance at a time.
@@ -655,7 +666,7 @@ class VsysFrontend(object):
   Example usage:
 
   try:
-    vs = VsysFrontend('vsys_target_name')
+    vs = VsysFrontend('vsys_backend_name')
     vs.open()
   except VsysException as err:
     print 'vsys create failed, cannot continue:', err
@@ -670,17 +681,17 @@ class VsysFrontend(object):
       break
   """
 
-  def __init__(self, target, open_nonblock=True):
+  def __init__(self, backend, open_nonblock=True):
     """Creates a new vsys object.
 
     Args:
-      target: str, vsys target name.
+      backend: str, vsys backend name.
       open_nonblock: bool, whether to open FIFOs nonblocking. Only for testing.
     Raises:
-      VsysCreateException when the FIFOs for target are not found.
+      VsysCreateException when the FIFOs for backend are not found.
     """
 
-    (self._path_in, self._path_out) = get_vsys_fifo_names(target)
+    (self._path_in, self._path_out) = get_vsys_fifo_names(backend)
     self._open_nonblock = open_nonblock
     self._fd_in = None
     self._fd_out = None
