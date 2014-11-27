@@ -725,13 +725,14 @@ class VsysFrontend(object):
     """Sends message to backend and waits up to timeout seconds for reply.
 
     Args:
-      message: str, the message to send to backend.
-      timeout: int, maximum time to wait for reply. If timeout is reached,
-          VsysException is raised.
+      message: str, the complete message to send to backend.
+      timeout: int, maximum time to wait for reply, in seconds.
+    Returns:
+      str, the complete response from backend.
     Raises:
-      VsysException on timeout or premature EOF from backend.
+      VsysException, if timeout occurs or premature EOF received from backend.
     """
-    self._send(message)
+    self._send(message + '\n')
     return self._recv(timeout).strip()
 
   def _open_fifo(self, path, flags):
@@ -744,6 +745,8 @@ class VsysFrontend(object):
       flags: int, flags to use when opening path with os.open.
     Returns:
       int, file descriptor for FIFO.
+    Raises:
+      VsysOpenException, if opening path fails.
     """
     collectd.info('Opening: %s' % path)
     if self._open_nonblock:
@@ -760,23 +763,32 @@ class VsysFrontend(object):
       raise VsysOpenException('Opening vsys fifo (%s) failed: %s' % (path, err))
 
   def _send(self, message):
-    """Sends message to backend. On error, raises VsysException."""
+    """Sends message to backend.
 
+    Args:
+      message: str, the message to send to backend.
+    Returns:
+      int, number of bytes written.
+    Raises:
+      VsysException, if an error occurs during write or the vsys frontend is
+          not open.
+    """
     if not self._fd_out:
       raise VsysException('vsys: call open before sendrecv')
     try:
-      ret = os.write(self._fd_out, message + '\n')
+      return os.write(self._fd_out, message)
     except OSError as err:
       raise VsysException('Failed to send message: %s' % err)
-    return ret
 
   def _recv(self, timeout):
     """Receives vsys response. Waits up to timeout seconds.
 
+    Args:
+      timeout: int, maximum time to wait for reply, in seconds.
     Returns:
       str, the complete vsys response minus terminating newline.
     Raises:
-      VsysException if timeout, EOF is reached, or an unexpected error occur.
+      VsysException, if timeout occurs or premature EOF received from backend.
     """
 
     rlist, _, _ = select.select([self._fd_in], [], [], timeout)
