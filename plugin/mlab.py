@@ -863,10 +863,11 @@ def plugin_read(unused_input_data=None):
       continue
 
     if entry not in _vs_xid_names:
-      collectd.warning('mlab: no vs_name for xid %s' % entry)
       init_vserver_xid_names()  # Try reloading names to get new vs_names.
       # Skip, if still not present.
       if entry not in _vs_xid_names:
+        collectd.error(('mlab: no vserver name found for xid %s after '
+                        'reloading names.') % entry)
         continue
 
     vs_name = _vs_xid_names[entry]
