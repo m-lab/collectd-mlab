@@ -455,7 +455,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     backend.join()
     self.assertFalse(backend.isAlive())
 
-  def testunit_sendrecv_WHEN_send_empty_reply_RAISES_VsysException(self):
+  def testunit_sendrecv_WHEN_send_empty_reply_RETURNS_empty_reply(self):
     backend = FakeVsysBackend('mock_target')
     backend.start()
 
