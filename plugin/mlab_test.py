@@ -720,13 +720,13 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
     mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
+    FakeValues.setup()
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   @mock.patch('mlab.get_self_stats')
   @mock.patch('mlab.read_vsys_data')
   def testunit_report_meta_metrics(
       self, mock_read_vsys_data, mock_get_self_stats):
-    FakeValues.setup()
     mlab._root_hostname = 'fake.host'
     test_stat_path = os.path.join(self._testdata_dir, 'proc_stat')
     expected_response = {
@@ -756,7 +756,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_quota_for_vserver(self):
-    FakeValues.setup()
     raw_dlimit = [374744, 10000000, 9450, -1, 2]  # used kb, total kb, ...
     expected_result = [374744000, 9625256000]  # used bytes, free bytes
 
@@ -768,7 +767,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_threads_for_vserver(self):
-    FakeValues.setup()
     fake_uptime = 950000.0
     test_entry_path = os.path.join(self._testdata_dir, '515')
 
@@ -784,7 +782,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_limits_for_vserver(self):
-    FakeValues.setup()
     test_entry_path = os.path.join(self._testdata_dir, '515')
 
     mlab.report_limits_for_vserver('fake.host', test_entry_path)
@@ -811,7 +808,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_network_for_vserver(self):
-    FakeValues.setup()
     test_entry_path = os.path.join(self._testdata_dir, '515')
 
     mlab.report_network_for_vserver('fake.host', test_entry_path)
@@ -826,7 +822,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_cpuavg_for_system(self):
-    FakeValues.setup()
     test_stat_path = os.path.join(self._testdata_dir, 'proc_stat')
     mlab._root_hostname = 'fake.host'
 
@@ -854,7 +849,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_cpuavg_for_system_WHEN_path_is_wrong(self):
-    FakeValues.setup()
     test_stat_path = os.path.join(self._testdata_dir, 'wrong_proc_stat')
     mlab._root_hostname = 'fake.host'
 
@@ -865,7 +859,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_cpu_for_vserver(self):
-    FakeValues.setup()
     test_entry_path = os.path.join(self._testdata_dir, '515')
 
     mlab.report_cpu_for_vserver('fake.host', test_entry_path)
@@ -879,7 +872,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   @mock.patch('mlab.time.time')
   def testunit_logger(self, mock_time):
-    FakeValues.setup()
     mlab._root_hostname = 'fake.host'
     mock_time.side_effect = [0, 10]  # first call, second call
 
@@ -908,12 +900,12 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
       os.mkfifo(fifo_in)
     if not os.path.exists(fifo_out):
       os.mkfifo(fifo_out)
+    FakeValues.setup()
 
   # NOTE: this is the largest most comprehensive, end-to-end test of everything.
   # So, setup is more involved, and the minimum objects are patched.
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testintegration_plugin_read(self):
-    FakeValues.setup()
     mlab._PROC_PID_STAT = os.path.join(self._testdata_dir, 'proc_pid_stat')
     mlab._PROC_STAT = os.path.join(self._testdata_dir, 'proc_stat')
     mlab._PROC_UPTIME = os.path.join(self._testdata_dir, 'uptime')
