@@ -292,7 +292,7 @@ class FakeVsysBackend(threading.Thread):
         break
 
       if 'shutdown_reader' in val:
-        # NOTE: the next attempt to by the frontend writer will fail.
+        # NOTE: the frontend's next attempt to write to the backend will fail.
         f_read.close()
         log('backend: reader closed')
         self._reader_closed = True
