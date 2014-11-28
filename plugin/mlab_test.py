@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for collectd-mlab."""
 
+import logging
 import os
 import sys
 import threading
@@ -22,17 +23,14 @@ import unittest
 # third-party
 import mock
 
-_DEBUG = False
-
 # W0212: Access to a protected member, required to access mlab global values.
 # pylint: disable=W0212
 
 
-def log(msg, *args):
-  """Prints additional information when _DEBUG is true."""
-  if _DEBUG:  
-    # Only used during interactive testing. So, no coverage needed.
-    print threading.current_thread().name, msg % args  # pragma: no cover.
+# NOTE: Change to level=logging.DEBUG for verbose output.
+logging.basicConfig(
+    format='%(relativeCreated)d - %(threadName)s - %(message)s',
+    level=logging.CRITICAL)
 
 
 class MockCollectd(mock.Mock):
@@ -44,13 +42,13 @@ class MockCollectd(mock.Mock):
   """
 
   def info(self, msg):
-    log(msg)
+    logging.debug(msg)
 
   def error(self, msg):
-    log(msg)
+    logging.debug(msg)
 
   def warning(self, msg):
-    log(msg)
+    logging.debug(msg)
 
 
 # NOTE: the 'collectd' module (imported by 'mlab' plugin) does not actually
@@ -274,10 +272,10 @@ class FakeVsysBackend(threading.Thread):
   def _runbackend(self):
     """Runs the handling loop for the backend thread."""
 
-    log('backend: open %s in r', self._fifo_in)
+    logging.debug('backend: open %s in r', self._fifo_in)
     f_read = open(self._fifo_in, 'r')
 
-    log('backend: open %s out w', self._fifo_out)
+    logging.debug('backend: open %s out w', self._fifo_out)
     f_write = open(self._fifo_out, 'w')
 
     while True:
@@ -286,21 +284,21 @@ class FakeVsysBackend(threading.Thread):
         break
 
       val = f_read.readline()
-      log('backend: received %s', val)
+      logging.debug('backend: received %s', val)
       if not val:
-        log('backend: eof')
+        logging.debug('backend: eof')
         break
 
       if 'shutdown_reader' in val:
         # NOTE: the frontend's next attempt to write to the backend will fail.
         f_read.close()
-        log('backend: reader closed')
+        logging.debug('backend: reader closed')
         self._reader_closed = True
 
       elif 'shutdown_writer' in val:
         # NOTE: the frontend reader will receive EOF.
         f_write.close()
-        log('backend: writer closed')
+        logging.debug('backend: writer closed')
         self._writer_closed = True
 
       elif 'take_too_long' in val:
@@ -310,13 +308,13 @@ class FakeVsysBackend(threading.Thread):
       if not self._writer_closed:
         message_type = val.strip()
         response = self._responses.get(message_type, 'default')
-        log('backend: writing: %s', response)
+        logging.debug('backend: writing: %s', response)
         f_write.write(response + '\n')
         f_write.flush()
 
     f_read.close()
     f_write.close()
-    log('backend: exit')
+    logging.debug('backend: exit')
 
 
 class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
