@@ -139,7 +139,7 @@ class FakeValues(object):
     self._VALUE_MAP[metric_key] = self.values
 
 
-class FakeVsysBackend(threading.Thread):
+class FakeVsysBackend(object):
   """FakeVsysBackend acts as a fake Vsys backend.
 
   See mlab.VsysFrontend for an overview of Vsys and the VsysFrontend class.
@@ -249,13 +249,25 @@ class FakeVsysBackend(threading.Thread):
     self._complete_shutdown_reader = threading.Event()
     self._complete_take_too_long = threading.Event()
 
-    # NOTE: When we override Thread.run (typical for derived class), the
-    # 'coverage' utility cannot see it. So, as a work-around, assign target
-    # in Thread.__init__ to achieve the same effect.
-    super(FakeVsysBackend, self).__init__(target=self._runbackend)
-
+    self._thread = threading.Thread(target=self._runbackend)
     # Daemon threads don't require a join to clean up thread after exit.
-    self.daemon = True
+    self._thread.daemon = True
+
+  def start(self):
+    """Starts the FakeVsysBackend.
+
+    Must be called before opening vsys frontend.
+    """
+    self._thread.start()
+
+  def shutdown(self):
+    """Attempts to shutdown the FakeVsysBackend, waiting at most 5 seconds.
+
+    Returns:
+      bool, True if shutdown succeeds, False if shutdown fails.
+    """
+    self._thread.join(5)
+    return not self._thread.isAlive()
 
   def set(self, key, value):
     """Use the set method to assign request/response pairs during tests."""
@@ -380,10 +392,9 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.open()
     received_result = vsys.sendrecv('fake_request')
     vsys.close()
-    backend.join()
 
     self.assertEqual(received_result, expected_response)
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_RETURNS_correctly(self):
     expected_response = '{"version": 1, "data": {"rss": 3000000}}'
@@ -395,10 +406,9 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.open()
     received_result = vsys.sendrecv('fake_request')
     vsys.close()
-    backend.join()
 
     self.assertEqual(received_result, expected_response)
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_AFTER_close_RAISES_VsysException(self):
     backend = FakeVsysBackend('mock_target')
@@ -410,8 +420,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.close()
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request')
 
-    backend.join()
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_AFTER_shutdown_reader_RAISES_VsysException(self):
     backend = FakeVsysBackend('mock_target')
@@ -425,8 +434,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
 
     backend.complete_shutdown_reader()
     vsys.close()
-    backend.join()
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_shutdown_writer_RAISES_VsysException(self):
     backend = FakeVsysBackend('mock_target')
@@ -437,8 +445,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'shutdown_writer', 1)
 
     vsys.close()
-    backend.join()
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_request_take_too_long_RAISES_VsysException(self):
     backend = FakeVsysBackend('mock_target')
@@ -450,8 +457,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
 
     backend.complete_take_too_long()
     vsys.close()
-    backend.join()
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_send_empty_reply_RETURNS_empty_reply(self):
     backend = FakeVsysBackend('mock_target')
@@ -462,9 +468,8 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     returned_value = vsys.sendrecv('send_empty_reply')
 
     vsys.close()
-    backend.join()
     self.assertEqual(returned_value, '')
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   @mock.patch('os.read')
   def testunit_sendrecv_WHEN_read_fails_RAISES_VsysException(self, mock_read):
@@ -477,9 +482,8 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.open()
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request', 1)
     vsys.close()
-    backend.join()
 
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
 
 class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
@@ -937,7 +941,7 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
 
     # Shutdown.
     mlab._vs_vsys.close()
-    backend.join()
+
     # NOTE: these should be tested by other tests, but pick one from each
     # subsystem.
     self.assertEqual(
@@ -969,7 +973,7 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
     self.assertEqual(
         metrics.get('fake.host/meta/collectd/process_memory/vm'), [1234321])
     self.assertEqual(key_length, expected_length)
-    self.assertFalse(backend.isAlive())
+    self.assertTrue(backend.shutdown())
 
   def testintegration_register_WHEN_plugin_loaded(self):
     # Confirm that all expected registration methods are called.
