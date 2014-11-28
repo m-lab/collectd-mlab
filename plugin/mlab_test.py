@@ -228,7 +228,7 @@ class FakeVsysBackend(threading.Thread):
   """
 
   def __init__(self, target):
-    """Initializes a new VsysFrontend.
+    """Initializes a new FakeVsysBackend.
 
     Example usage:
       backend = FakeVsysBackend('target')
