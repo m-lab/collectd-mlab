@@ -902,7 +902,7 @@ def parse_config(config, depth=0):
       _config_exclude_slices[config.values[0]] = True
     else:
       collectd.warning('%sIgnoring directive: %s %s' % (
-          prefix, config.key, config.values))
+          padding, config.key, config.values))
 
   if len(config.children) > 0:
     collectd.info('%sChildren:' % padding)
