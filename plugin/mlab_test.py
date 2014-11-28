@@ -166,8 +166,9 @@ class FakeVsysBackend(threading.Thread):
   testing normal operations without injected errors.
 
   Example:
-    backend = FakeVsysBackend(fifo_in, fifo_out)
+    backend = FakeVsysBackend('target')
     backend.set('custom_command', 'custom_response'):
+    backend.start()
 
     response = vsys.sendrecv('custom_command')
     assert(response == 'custom_response')
