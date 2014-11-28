@@ -154,7 +154,7 @@ class FakeVsysBackend(threading.Thread):
     3. frontend opens target.out for reading, blocks.
     4. backend opens target.out for writing, blocks.
   
-  FakeVsysBackend allows the caller to setup controlled request and response
+  FakeVsysBackend allows the caller to set up controlled request and response
   messages to test a frontend end to end. As well, if any file descriptor is
   unexpectedly closed or the backend misbehaves, different failures can occur.
   To inject these failure scenarios, FakeVsysBackend provides some special
