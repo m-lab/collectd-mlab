@@ -336,8 +336,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
       os.mkfifo(fifo_out)
 
   @mock.patch('os.open')
-  def testunit_open_RAISES_OSError(
-      self, mock_open):
+  def testunit_open_RAISES_OSError(self, mock_open):
     def side_effect(*unused_args):
       """Manages a two-step return value."""
       # Hi! welcome to an old version of the mock module. In this old version,
@@ -403,8 +402,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     self.assertEqual(received_result, expected_response)
     self.assertFalse(backend.isAlive())
 
-  def testunit_sendrecv_AFTER_close_RAISES_VsysException(
-      self):
+  def testunit_sendrecv_AFTER_close_RAISES_VsysException(self):
     backend = FakeVsysBackend('mock_target')
     backend.set('fake_request', 'will not be returned')
     backend.start()
@@ -471,8 +469,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     self.assertFalse(backend.isAlive())
 
   @mock.patch('os.read')
-  def testunit_sendrecv_WHEN_read_fails_RAISES_VsysException(
-      self, mock_read):
+  def testunit_sendrecv_WHEN_read_fails_RAISES_VsysException(self, mock_read):
     mock_read.side_effect = OSError(-1, 'fake os error')
     backend = FakeVsysBackend('mock_target')
     backend.set('fake_request', 'expected_response')
