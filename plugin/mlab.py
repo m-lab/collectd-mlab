@@ -788,7 +788,8 @@ class VsysFrontend(object):
     Returns:
       str, the complete vsys response minus terminating newline.
     Raises:
-      VsysException, if timeout occurs or premature EOF received from backend.
+      VsysException, if timeout occurs, premature EOF is read from backend or
+          other IO error.
     """
 
     rlist, _, _ = select.select([self._fd_in], [], [], timeout)
