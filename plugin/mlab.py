@@ -550,7 +550,7 @@ def read_vsys_data(command, version):
     return {}
 
   if data['version'] != version:
-    msg = '%s: version mismatch: found (%s), expected (%s)' % (
+    msg = '%s: version mismatch: found (%d), expected (%d)' % (
           command, data['version'], version)
     collectd.warning(msg)
 
