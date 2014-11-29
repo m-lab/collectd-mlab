@@ -586,7 +586,7 @@ def read_vsys_data_direct(command):
     data = json.loads(raw_data)
   except ValueError as err:
     collectd.error('Failed to load json from raw data: -%s-' % raw_data)
-    collectd.error(str(traceback.format_exc()))
+    collectd.error(str(err))
     return {}
 
   return data
