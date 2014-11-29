@@ -329,7 +329,7 @@ class FakeVsysBackend(object):
     logging.debug('backend: exit')
 
 
-class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
+class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
 
   def setUp(self):
     global mlab
@@ -382,11 +382,31 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
 
     self.assertRaises(mlab.VsysOpenException, vsys.open)
 
+
+class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
+
+  def setUp(self):
+    global mlab
+    # NOTE: Reload the mlab module after each test.
+    mlab = reload(mlab)
+    self._testdata_dir = os.path.join(
+        os.path.dirname(mlab.__file__), 'testdata')
+    mlab._VSYS_FMT_IN = os.path.join(self._testdata_dir, '%s.in')
+    mlab._VSYS_FMT_OUT = os.path.join(self._testdata_dir, '%s.out')
+    (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
+    if not os.path.exists(fifo_in):
+      os.mkfifo(fifo_in)
+    if not os.path.exists(fifo_out):
+      os.mkfifo(fifo_out)
+    self.backend = FakeVsysBackend('mock_target')
+    self.backend.start()
+
+  def tearDown(self):
+    self.assertTrue(self.backend.shutdown())
+
   def testunit_sendrecv_WHEN_recving_bad_extra_data_RETURNS_good_reply(self):
     expected_response = '{"version": 1, "data": {"rss": 3000000}}'
-    backend = FakeVsysBackend('mock_target')
-    backend.set('fake_request', 'bad-extra-data\n' + expected_response)
-    backend.start()
+    self.backend.set('fake_request', 'bad-extra-data\n' + expected_response)
 
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
@@ -394,13 +414,10 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.close()
 
     self.assertEqual(received_result, expected_response)
-    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_RETURNS_correctly(self):
     expected_response = '{"version": 1, "data": {"rss": 3000000}}'
-    backend = FakeVsysBackend('mock_target')
-    backend.set('fake_request', expected_response)
-    backend.start()
+    self.backend.set('fake_request', expected_response)
 
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
@@ -408,82 +425,59 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.close()
 
     self.assertEqual(received_result, expected_response)
-    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_AFTER_close_RAISES_VsysException(self):
-    backend = FakeVsysBackend('mock_target')
-    backend.set('fake_request', 'will not be returned')
-    backend.start()
+    self.backend.set('fake_request', 'will not be returned')
 
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
     vsys.close()
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request')
 
-    self.assertTrue(backend.shutdown())
-
   def testunit_sendrecv_AFTER_shutdown_reader_RAISES_VsysException(self):
-    backend = FakeVsysBackend('mock_target')
-    backend.set('fake_request', 'will not be returned')
-    backend.start()
+    self.backend.set('fake_request', 'will not be returned')
 
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
     _ = vsys.sendrecv('shutdown_reader')
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request')
 
-    backend.complete_shutdown_reader()
+    self.backend.complete_shutdown_reader()
     vsys.close()
-    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_shutdown_writer_RAISES_VsysException(self):
-    backend = FakeVsysBackend('mock_target')
-    backend.start()
-
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
-    self.assertRaises(mlab.VsysException, vsys.sendrecv, 'shutdown_writer', 1)
 
+    self.assertRaises(mlab.VsysException, vsys.sendrecv, 'shutdown_writer', 1)
     vsys.close()
-    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_request_take_too_long_RAISES_VsysException(self):
-    backend = FakeVsysBackend('mock_target')
-    backend.start()
-
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
-    self.assertRaises(mlab.VsysException, vsys.sendrecv, 'take_too_long', 1)
 
-    backend.complete_take_too_long()
+    self.assertRaises(mlab.VsysException, vsys.sendrecv, 'take_too_long', 1)
+    self.backend.complete_take_too_long()
     vsys.close()
-    self.assertTrue(backend.shutdown())
 
   def testunit_sendrecv_WHEN_send_empty_reply_RETURNS_empty_reply(self):
-    backend = FakeVsysBackend('mock_target')
-    backend.start()
-
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
     returned_value = vsys.sendrecv('send_empty_reply')
 
     vsys.close()
     self.assertEqual(returned_value, '')
-    self.assertTrue(backend.shutdown())
 
   @mock.patch('os.read')
   def testunit_sendrecv_WHEN_read_fails_RAISES_VsysException(self, mock_read):
     mock_read.side_effect = OSError(-1, 'fake os error')
-    backend = FakeVsysBackend('mock_target')
-    backend.set('fake_request', 'expected_response')
-    backend.start()
+    self.backend.set('fake_request', 'expected_response')
 
     vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
     vsys.open()
+
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request', 1)
     vsys.close()
-
-    self.assertTrue(backend.shutdown())
 
 
 class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
