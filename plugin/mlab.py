@@ -58,7 +58,6 @@ import select
 import socket
 import stat
 import time
-import traceback
 
 # This import is part of collectd runtime, and not a real python module.
 # F0401 means 'cannot import module'.
