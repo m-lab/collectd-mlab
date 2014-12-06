@@ -18,13 +18,17 @@ import os
 import sys
 import threading
 import time
-import unittest
 
-# third-party
+# Third-party packages.
 import mock
+import unittest2 as unittest
 
 # W0212: Access to a protected member, required to access mlab global values.
 # pylint: disable=W0212
+# R0904: Too many public methods. This is due to unittest2.TestCase having ~50
+# public methods. In general, a limit on public methods seems sensible, but for
+# unit tests it unhelpful.
+# pylint: disable=R0904
 
 
 # NOTE: Change to level=logging.DEBUG for verbose output.
@@ -540,7 +544,7 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
 
     mlab.plugin_configure(root_config)
 
-    self.assertEqual(mlab._config_exclude_slices, expected_value)
+    self.assertDictEqual(mlab._config_exclude_slices, expected_value)
 
   def testunit_get_self_stats(self):
     test_stat_path = os.path.join(self._testdata_dir, 'proc_pid_stat')
@@ -556,14 +560,14 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
 
     stats = mlab.get_self_stats(test_stat_path)
 
-    self.assertEqual(stats, {})
+    self.assertDictEqual(stats, {})
 
   def testunit_get_self_stats_WHEN_bad_stat_data(self):
     test_stat_path = os.path.join(self._testdata_dir, 'stat_wrong')
 
     stats = mlab.get_self_stats(test_stat_path)
 
-    self.assertEqual(stats, {})
+    self.assertDictEqual(stats, {})
 
   def testunit_read_system_uptime(self):
     mlab._PROC_UPTIME = os.path.join(self._testdata_dir, 'uptime')
@@ -628,7 +632,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
     
     returned_value = mlab.read_vsys_data('fake_script', 1)
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_missing_version_RETURNS_empty_result(
@@ -637,7 +641,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
     
     returned_value = mlab.read_vsys_data('fake_script', 2)
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_wrong_message_type_RETURNS_empty_result(
@@ -647,7 +651,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
     
     returned_value = mlab.read_vsys_data('fake_script', 2)
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   @mock.patch('mlab.read_vsys_data_direct')
   def testunit_read_vsys_data_WHEN_wrong_version_RETURNS_data_anyway(
@@ -666,7 +670,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     returned_value = mlab.read_vsys_data_direct('fake_request')
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   def testunit_read_vsys_data_direct_WHEN_sendrecv_RAISES_VsysException(self):
     mock_vs = mock.Mock()
@@ -675,7 +679,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     returned_value = mlab.read_vsys_data_direct('fake_request')
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   def testunit_read_vsys_data_direct_WHEN_sendrecv_RETURNS_empty_response(self):
     mock_vs = mock.Mock()
@@ -684,7 +688,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     returned_value = mlab.read_vsys_data_direct('fake_request')
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   def testunit_read_vsys_data_direct_WHEN_sendrecv_RETURNS_bad_json(self):
     mock_vs = mock.Mock()
@@ -693,7 +697,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     returned_value = mlab.read_vsys_data_direct('fake_request')
 
-    self.assertEqual(returned_value, {})
+    self.assertDictEqual(returned_value, {})
 
   @mock.patch('mlab.read_vsys_data')
   def testunit_init_vserver_xid_names(self, mock_read_vsys_data):
@@ -702,7 +706,7 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     mlab.init_vserver_xid_names()
 
-    self.assertEqual(mlab._vs_xid_names, expected_result)
+    self.assertDictEqual(mlab._vs_xid_names, expected_result)
 
 
 class MlabCollectdPlugin_MetricTests(unittest.TestCase):
