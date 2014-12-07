@@ -268,8 +268,8 @@ class FakeVsysBackend(object):
     Returns:
       bool, True if shutdown succeeds, False if shutdown fails.
     """
-    # If the backend thread is not waiting on the complete_during_shutdown event,
-    # then this is just a noop.
+    # If the backend thread is not waiting on the complete_during_shutdown
+    # event, then this is just a noop.
     self._complete_during_shutdown.set()
     self._thread.join(5)
     return not self._thread.isAlive()
@@ -329,9 +329,6 @@ class FakeVsysBackend(object):
 class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
     mlab._VSYS_FMT_IN = os.path.join(self._testdata_dir, '%s.in')
@@ -383,9 +380,6 @@ class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
 class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
     mlab._VSYS_FMT_IN = os.path.join(self._testdata_dir, '%s.in')
@@ -479,9 +473,6 @@ class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
   """Tests to increase coverage on minor methods."""
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
@@ -515,9 +506,6 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
   """Unit tests for collectd-mlab plugin."""
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
@@ -525,6 +513,7 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
     class MockCfg(object):
       def __init__(self, key, values=(), children=()):
         (self.key, self.values, self.children) = (key, values, children)
+    mlab._config_exclude_slices = {}  # Set default value.
     # NOTE: the configuration passed to mlab plugin from collectd has all
     # directives as children of an empty root config object.
     root_config = MockCfg(
@@ -605,9 +594,6 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
   """Test vsys methods for collectd-mlab plugin."""
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
@@ -717,9 +703,6 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
   """Test metric methods for collectd-mlab plugin."""
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
     FakeValues.setup()
@@ -894,9 +877,6 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
   """End-to-end tests."""
 
   def setUp(self):
-    global mlab
-    # NOTE: Reload the mlab module after each test.
-    mlab = reload(mlab)
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
     mlab._VSYS_FMT_IN = os.path.join(self._testdata_dir, '%s.in')
@@ -919,6 +899,8 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
     mlab._root_hostname = 'fake.host'
     mlab._config_exclude_slices = {'ignore_slice': True}
     mlab._VSYS_FRONTEND_TARGET = 'mock_target'
+    mlab._vs_vsys = None
+    mlab._vs_xid_names = {}
     vs_dlimit_resp = (
         '{"version": 1, "data": {"515": [386460, 10000000, 9533, -1, 2]}}')
     vs_xidname_resp = ('{"version": 1, "data": {"515": "mlab_utility", '
