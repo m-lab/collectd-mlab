@@ -406,7 +406,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     self.backend.start()
 
   def tearDown(self):
-    self.assertTrue(self.backend.shutdown())
+    self.backend.shutdown()
 
   def testunit_sendrecv_WHEN_recving_bad_extra_data_RETURNS_good_reply(self):
     expected_response = '{"version": 1, "data": {"rss": 3000000}}'
@@ -948,6 +948,7 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
 
     # Shutdown.
     mlab._vs_vsys.close()
+    backend.shutdown()
 
     # NOTE: these should be tested by other tests, but pick one from each
     # subsystem.
@@ -980,7 +981,6 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
     self.assertEqual(
         metrics.get('fake.host/meta/collectd/process_memory/vm'), [1234321])
     self.assertEqual(key_length, expected_length)
-    self.assertTrue(backend.shutdown())
 
   def testintegration_register_WHEN_plugin_loaded(self):
     # Confirm that all expected registration methods are called.
