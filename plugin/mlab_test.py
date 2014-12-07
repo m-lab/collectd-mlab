@@ -595,17 +595,17 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
 
   def testunit_slicename_to_hostname_WITH_two_parts(self):
     mlab._root_hostname = 'host.domain'
-    expected_hostname = 'slice.fake.host.domain'
+    expected_hostname = 'slicename.fakesite.host.domain'
 
-    returned_hostname = mlab.slicename_to_hostname('fake_slice')
+    returned_hostname = mlab.slicename_to_hostname('fakesite_slicename')
 
     self.assertEqual(returned_hostname, expected_hostname)
 
   def testunit_slicename_to_hostname_WITH_three_parts(self):
     mlab._root_hostname = 'host.domain'
-    expected_hostname = 'slice.name.fake.host.domain'
+    expected_hostname = 'slice.name.fakesite.host.domain'
 
-    returned_hostname = mlab.slicename_to_hostname('fake_slice_name')
+    returned_hostname = mlab.slicename_to_hostname('fakesite_slice_name')
 
     self.assertEqual(returned_hostname, expected_hostname)
 
