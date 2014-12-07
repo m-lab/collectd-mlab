@@ -662,6 +662,19 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
 
     self.assertEqual(returned_value, 'x')
 
+  def testunit_read_vsys_data_RETURNS_successfully(self):
+    mock_vs = mock.Mock()
+    mock_vs.sendrecv.return_value = (
+        '{"version": %d, "message_type": "fake_request", '
+        '"data": {"rss": 3000000}}') % mlab._VSYS_FRONTEND_VERSION
+    mlab._vs_vsys = mock_vs
+    expected_response = {'rss': 3000000}
+
+    returned_value = mlab.read_vsys_data(
+        'fake_request', mlab._VSYS_FRONTEND_VERSION)
+
+    self.assertDictEqual(returned_value, expected_response)
+
   @mock.patch('mlab.VsysFrontend')
   def testunit_read_vsys_data_direct_WHEN_VsysFrontend_RAISES_CreateException(
       self, mock_vsysfrontend):
