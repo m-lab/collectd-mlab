@@ -798,6 +798,8 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
     mlab.report_limits_for_vserver('fake.host', test_entry_path)
     metrics = FakeValues.get_metrics()
 
+    # Vserver reports vml, vm, anon, and rss as 'page count'. But, the mlab
+    # plugin converts page count to bytes (i.e. pages*PAGESIZE).
     self.assertEqual(
         metrics.get('fake.host/memory/vs_memory/vml'), [0.0])
     self.assertEqual(
