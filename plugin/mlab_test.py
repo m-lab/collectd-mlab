@@ -183,14 +183,13 @@ class FakeVsysBackend(object):
     that future frontend writes will fail (path 1 & 2 above). Caller should
     expect 'vsys.sendrecv' to return successfully, and for the next call to
     vsys.sendrecv to fail. To clean up after this command, the caller MUST call
-    complete_shutdown_reader, or the backend thread will not exit, and the
-    backend write file descriptor will not be closed which could affect future
-    tests.
+    shutdown, or the backend thread will not exit properly, and the backend
+    write file descriptor will not be closed which could affect future tests.
   
     Example:
       _ = vsys.sendrecv('shutdown_reader')
       self.assertRaises(mlab.VsysException, vsys.sendrecv, 'any_request')
-      backend.complete_shutdown_reader()
+      backend.shutdown()
   
   Command: shutdown_writer
   
@@ -220,12 +219,12 @@ class FakeVsysBackend(object):
     This is helpful for verifying vsys.sendrecv timeout behavior. This command
     simulates a situation where the backend has stopped responding as quickly
     as the frontend expects or requires. To clean up after this command, the
-    caller MUST call complete_take_too_long, or the backend thread will not
-    continue so will not be able to exit, which could affect later tests.
+    caller MUST call shutdown, or the backend thread will continue bo block and
+    not be able to exit, which could affect later tests.
 
     Example:
       response = vsys.sendrecv('take_too_long', 1)
-      backend.complete_take_too_long()
+      backend.shutdown()
       assert(response == '')
   """
 
@@ -250,8 +249,7 @@ class FakeVsysBackend(object):
 
     self._writer_closed = False
     self._reader_closed = False
-    self._complete_shutdown_reader = threading.Event()
-    self._complete_take_too_long = threading.Event()
+    self._complete_during_shutdown = threading.Event()
 
     self._thread = threading.Thread(target=self._runbackend)
     # Daemon threads don't require a join to clean up thread after exit.
@@ -270,20 +268,15 @@ class FakeVsysBackend(object):
     Returns:
       bool, True if shutdown succeeds, False if shutdown fails.
     """
+    # If the backend thread is not waiting on the complete_during_shutdown event,
+    # then this is just a noop.
+    self._complete_during_shutdown.set()
     self._thread.join(5)
     return not self._thread.isAlive()
 
   def set(self, key, value):
     """Use the set method to assign request/response pairs during tests."""
     self._responses[key] = value
-
-  def complete_take_too_long(self):
-    """Must be called after sending 'take_too_long' command."""
-    self._complete_take_too_long.set()
-
-  def complete_shutdown_reader(self):
-    """Must be called after sending 'shutdown_reader' command."""
-    self._complete_shutdown_reader.set()
 
   def _runbackend(self):
     """Runs the handling loop for the backend thread."""
@@ -296,7 +289,7 @@ class FakeVsysBackend(object):
 
     while True:
       if self._reader_closed:
-        self._complete_shutdown_reader.wait()
+        self._complete_during_shutdown.wait()
         break
 
       val = f_read.readline()
@@ -318,7 +311,7 @@ class FakeVsysBackend(object):
         self._writer_closed = True
 
       elif 'take_too_long' in val:
-        self._complete_take_too_long.wait()
+        self._complete_during_shutdown.wait()
         break
 
       if not self._writer_closed:
@@ -446,7 +439,6 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     _ = vsys.sendrecv('shutdown_reader')
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request')
 
-    self.backend.complete_shutdown_reader()
     vsys.close()
 
   def testunit_sendrecv_WHEN_shutdown_writer_RAISES_VsysException(self):
@@ -461,7 +453,6 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
     vsys.open()
 
     self.assertRaises(mlab.VsysException, vsys.sendrecv, 'take_too_long', 1)
-    self.backend.complete_take_too_long()
     vsys.close()
 
   def testunit_sendrecv_WHEN_send_empty_reply_RETURNS_empty_reply(self):
