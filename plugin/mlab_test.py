@@ -886,7 +886,9 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
   @mock.patch('mlab.time.time')
   def testunit_logger(self, mock_time):
     mlab._root_hostname = 'fake.host'
-    mock_time.side_effect = [0, 10]  # first call, second call
+    initial_timestamp = 1405007038
+    # Return two timestamps to simulate time passing.
+    mock_time.side_effect = [initial_timestamp, initial_timestamp + 10]
 
     @mlab.logger('read')
     def fake_read():
