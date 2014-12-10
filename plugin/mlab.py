@@ -227,9 +227,27 @@ def submit_vserver_threads(vs_host, type_instance, value):
   submit_generic(vs_host, 'context', 'vs_threads_basic', value, type_instance)
 
 
-def logger(type_instance):
-  """Returns decorator to record runtime of methods."""
-  def logger_decorator(func):
+def meta_timer(type_instance):
+  """Decorates a function to record its run time as a collectd metric.
+
+  Every time the decorated function is called, its run time is reported to
+  collectd as a meta timer metric. Any number of functions can be decorated,
+  but two conditions should be met: 1) each decoration uses a distinct
+  type_instance name, 2) the decorated function is called exactly once per
+  sample period. This guarantees that no measurements are lost and that a
+  measurement occurs every sample period.
+
+  Example usage:
+    @meta_timer('read')
+    def my_read_method():
+      pass
+
+  Args:
+    type_instance: str, the name of the meta timer type.
+  Returns:
+    callable, a function decorator.
+  """
+  def meta_timer_decorator(func):
     """Returns wrapper method around given function."""
     def wrapper(*args, **kwargs):
       """Calls function and reports execution time as a meta-metric."""
@@ -239,7 +257,7 @@ def logger(type_instance):
       submit_meta_timer(type_instance, t_end-t_start)
       return val
     return wrapper
-  return logger_decorator
+  return meta_timer_decorator
 
 
 def report_meta_metrics(stat_path):
@@ -848,7 +866,7 @@ def slicename_to_hostname(vs_name):
   return '%s.%s' % (prefix, _root_hostname)
 
 
-@logger('read')
+@meta_timer('read')
 def plugin_read(unused_input_data=None):
   """Handles collectd's 'read' interface for mlab plugin."""
 

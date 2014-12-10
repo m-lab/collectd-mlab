@@ -858,13 +858,16 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   @mock.patch('mlab.time.time')
-  def testunit_logger(self, mock_time):
+  def testunit_meta_timer(self, mock_time):
     mlab._root_hostname = 'fake.host'
     initial_timestamp = 1405007038
     # Return two timestamps to simulate time passing.
     mock_time.side_effect = [initial_timestamp, initial_timestamp + 10]
 
-    @mlab.logger('read')
+    # When fake_read is called, the meta_timer decorator measures the time
+    # taken to run fake_read(). But, since the time function is mocked, time
+    # passing is synthetic and fake_read doesn't have to do anything.
+    @mlab.meta_timer('read')
     def fake_read():
       pass
     fake_read()  # Invokes decorator.
