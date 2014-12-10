@@ -27,7 +27,7 @@ import unittest2 as unittest
 # pylint: disable=W0212
 # R0904: Too many public methods. This is due to unittest2.TestCase having ~50
 # public methods. In general, a limit on public methods seems sensible, but for
-# unit tests it unhelpful.
+# unit tests it is unhelpful.
 # pylint: disable=R0904
 
 
