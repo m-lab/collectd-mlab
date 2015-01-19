@@ -301,8 +301,8 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   def testunit_handle_request_WHEN_write_RAISES_ioerror(
       self, mock_stdin, mock_stdout, mock_handle_message):
     mock_stdin.readline.return_value = 'token backend_stats\n'
-    expected_value = 'token {"version": 1, "data": "fake reply"}\n'
-    mock_handle_message.return_value = expected_value
+    mock_handle_message.return_value = (
+        'token {"version": 1, "data": "fake reply"}\n')
     mock_stdout.write.side_effect = IOError(errno.EPIPE, 'fake ioerror')
 
     self.assertRaises(IOError, vs_resource_backend.handle_request)
