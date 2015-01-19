@@ -509,11 +509,15 @@ class MlabCollectdPlugin_UnitTests(unittest.TestCase):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
 
+  def tearDown(self):
+    # Reset module state to default.
+    global mlab
+    mlab = reload(mlab)
+
   def testunit_plugin_configure(self):
     class MockCfg(object):
       def __init__(self, key, values=(), children=()):
         (self.key, self.values, self.children) = (key, values, children)
-    mlab._config_exclude_slices = {}  # Set default value.
     # NOTE: the configuration passed to mlab plugin from collectd has all
     # directives as children of an empty root config object.
     root_config = MockCfg(
@@ -596,6 +600,11 @@ class MlabCollectdPlugin_VsysTests(unittest.TestCase):
   def setUp(self):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab.__file__), 'testdata')
+
+  def tearDown(self):
+    # Reset module state to default.
+    global mlab
+    mlab = reload(mlab)
 
   def testunit_vsys_fifo_exists_WHEN_given_regular_file_RETURNS_False(self):
     filename = os.path.join(self._testdata_dir, 'uptime')
@@ -891,6 +900,11 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
       os.mkfifo(fifo_out)
     FakeValues.setup()
 
+  def tearDown(self):
+    # Reset module state to default.
+    global mlab
+    mlab = reload(mlab)
+
   # NOTE: this is the largest most comprehensive, end-to-end test of everything.
   # So, setup is more involved, and the minimum objects are patched.
   @mock.patch('mlab.collectd.Values', new=FakeValues)
@@ -902,8 +916,6 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
     mlab._root_hostname = 'fake.host'
     mlab._config_exclude_slices = {'ignore_slice': True}
     mlab._VSYS_FRONTEND_TARGET = 'mock_target'
-    mlab._vs_vsys = None
-    mlab._vs_xid_names = {}
     vs_dlimit_resp = (
         '{"version": 1, "data": {"515": [386460, 10000000, 9533, -1, 2]}}')
     vs_xidname_resp = ('{"version": 1, "data": {"515": "mlab_utility", '
