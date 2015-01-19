@@ -182,9 +182,9 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     expected_value = {'version': vs_resource_backend.VS_BACKEND_VERSION,
                       'ts': 10,
                       'data': mock_obj,
-                      'message_type': ''}
+                      'message_type': 'banana'}
 
-    returned_value = vs_resource_backend.report(mock_obj)
+    returned_value = vs_resource_backend.report('banana', mock_obj)
 
     self.assertEqual(returned_value, expected_value)
 

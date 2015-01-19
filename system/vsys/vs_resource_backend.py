@@ -282,13 +282,13 @@ def get_backend_stats(stat_path):
   return backend_stats
 
 
-def report(obj):
+def report(message_type, obj):
   """Returns a dict that wraps the given object with additional metadata."""
   data = {
     'version': VS_BACKEND_VERSION,
     'ts': time.time(),
     'data': obj,
-    'message_type': '',
+    'message_type': message_type,
   }
   return data
 
@@ -305,8 +305,7 @@ def handle_message(message_type):
     syslog_err('Unknown message type: %s' % message_type)
     return None
 
-  data = report(raw_data)
-  data['message_type'] = message_type
+  data = report(message_type, raw_data)
   return json.dumps(data)
 
 
