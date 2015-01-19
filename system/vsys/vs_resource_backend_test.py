@@ -38,7 +38,7 @@ def fake_vc_get_dlimit(
   limit.space_used = 10
   limit.space_total = 100
   limit.inodes_used = 20
-  limit.inodes_total = 2**32-1
+  limit.inodes_total = (2 ** 32) - 1
   limit.reserved = 2
 
 
