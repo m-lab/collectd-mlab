@@ -145,10 +145,10 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     self.assertDictEqual(expected_value, returned_value)
 
-  @mock.patch('vs_resource_backend.pwd')
-  def testunit_get_xid_names(self, mock_pwd):
+  @mock.patch('vs_resource_backend.pwd.getpwuid')
+  def testunit_get_xid_names(self, mock_getpwuid):
     vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
-    mock_pwd.getpwuid.return_value = pwd.struct_pwent(
+    mock_getpwuid.return_value = pwd.struct_pwent(
         ('mlab_utility', '*', 515, 505, 1, '/home/mlab_utility', '/bin/bash'))
     expected_value = {'515': 'mlab_utility'}
 
@@ -156,20 +156,20 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     self.assertDictEqual(expected_value, returned_value)
  
-  @mock.patch('vs_resource_backend.pwd')
-  def testunit_get_xid_names_WHEN_getpwuid_RAISES_KeyError(self, mock_pwd):
+  @mock.patch('vs_resource_backend.pwd.getpwuid')
+  def testunit_get_xid_names_WHEN_getpwuid_RAISES_KeyError(self, mock_getpwuid):
     vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
-    mock_pwd.getpwuid.side_effect = KeyError('fake key error')
+    mock_getpwuid.side_effect = KeyError('fake key error')
     expected_value = {}
 
     returned_value = vs_resource_backend.get_xid_names()
 
     self.assertDictEqual(expected_value, returned_value)
 
-  @mock.patch('vs_resource_backend.pwd')
-  def testunit_get_xid_names_WHEN_pw_name_IS_invalid(self, mock_pwd):
+  @mock.patch('vs_resource_backend.pwd.getpwuid')
+  def testunit_get_xid_names_WHEN_pw_name_IS_invalid(self, mock_getpwuid):
     vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
-    mock_pwd.getpwuid.return_value = pwd.struct_pwent(
+    mock_getpwuid.return_value = pwd.struct_pwent(
         ('', '*', 515, 505, 1, '/home/mlab_utility', '/bin/bash'))
     expected_value = {}
 
