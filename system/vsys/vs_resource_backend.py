@@ -77,7 +77,7 @@ _LIBVSERVER = None
 _MAX_MESSAGE_LENGTH = 128
 _PAGESIZE = os.sysconf(os.sysconf_names['SC_PAGESIZE'])
 _PROC_PID_STAT = None
-_VS_PREFIX_DIR = "/proc/virtual"
+_VS_PREFIX_DIR = '/proc/virtual'
 
 
 class Error(Exception):
@@ -97,10 +97,10 @@ class LibVserverError(Error):
 class vc_ctx_dlimit(ctypes.Structure):
   """A ctypes representation of vserver, struct vc_ctx_dlimit."""
   _fields_ = [('space_used', ctypes.c_uint32),
-              ("space_total", ctypes.c_uint32),
-              ("inodes_used", ctypes.c_uint32),
-              ("inodes_total", ctypes.c_uint32),
-              ("reserved", ctypes.c_uint32),]
+              ('space_total', ctypes.c_uint32),
+              ('inodes_used', ctypes.c_uint32),
+              ('inodes_total', ctypes.c_uint32),
+              ('reserved', ctypes.c_uint32),]
 # pylint: enable=C0103
 
 
@@ -111,7 +111,7 @@ def init_libvserver():
      True on success, False on failure.
   """
   global _LIBVSERVER
-  lib = ctypes.util.find_library("vserver")
+  lib = ctypes.util.find_library('vserver')
   if lib is None:
     syslog_err('Failed to find vserver library.')
     return False
@@ -184,19 +184,19 @@ def get_xid_names():
       # On PlanetLab xid is set to uid.
       xid = int(entry)
     except ValueError:
-      syslog_err("Failed to convert expected xid: %s" % entry)
+      syslog_err('Failed to convert expected xid: %s' % entry)
       continue
 
     try:
       pw_entry = pwd.getpwuid(xid)
     except KeyError:
       # This is serious. A vserver is running without passwd entry.
-      syslog_err("Failed to find /etc/passwd entry for xid: %s" % entry)
+      syslog_err('Failed to find /etc/passwd entry for xid: %s' % entry)
       continue
 
     vs_name = pw_entry.pw_name
     if not vs_name:
-      syslog_err("pw_entry.pw_name is zero length for xid: %s" % entry)
+      syslog_err('pw_entry.pw_name is zero length for xid: %s' % entry)
       continue
 
     xid_names[entry] = vs_name
@@ -224,7 +224,7 @@ def get_xid_dlimits():
       continue
     
     try:
-      dlim = vc_get_dlimit("/vservers", xid)
+      dlim = vc_get_dlimit('/vservers', xid)
     except LibVserverError as err:
       # Errors calling vc_get_dlimit are likely to end fatally.
       syslog_err('vc_get_dlimit failed: %s' % err)
@@ -355,5 +355,5 @@ def main():
     sys.exit(exit_code)
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
   main()
