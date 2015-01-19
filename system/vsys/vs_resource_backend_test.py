@@ -193,7 +193,6 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   @mock.patch('vs_resource_backend.syslog_err')
   def testunit_handle_message_WHEN_type_IS_unknown(
       self, mock_syslog_err):
-
     returned_value = vs_resource_backend.handle_message('unknown')
 
     mock_syslog_err.assert_called_once()
@@ -204,8 +203,8 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   def testunit_handle_message_WHEN_type_IS_backend_stats(
       self, mock_time, mock_get_backend_stats):
     mock_time.time.return_value = 10
-    mock_get_backend_stats.return_value = {'rss': 2961408, 'vsize': 4919296,
-                                        'stime': 13.0, 'utime': 2.0}
+    mock_get_backend_stats.return_value = {
+      'rss': 2961408, 'vsize': 4919296, 'stime': 13.0, 'utime': 2.0}
     expected_value = ('{"message_type": "backend_stats", "version": 1, "data":'
                       ' {"utime": 2.0, "vsize": 4919296, "stime": 13.0, '
                       '"rss": 2961408}, "ts": 10}')
