@@ -45,10 +45,12 @@ def fake_vc_get_dlimit(
 class MlabVsResourceBackendTests(unittest.TestCase):
 
   def setUp(self):
-    global vs_resource_backend
-    vs_resource_backend = reload(vs_resource_backend)
     self._testdata_dir = os.path.join(
         os.path.dirname(vs_resource_backend.__file__), 'testdata')
+
+  def tearDown(self):
+    global vs_resource_backend
+    vs_resource_backend = reload(vs_resource_backend)
 
   def testunit_vc_get_dlimit(self):
     mock_vslib = mock.Mock()
