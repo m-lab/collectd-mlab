@@ -16,10 +16,10 @@
 import errno
 import os
 import pwd
-import unittest
 
 # Third-party packages.
 import mock
+import unittest2 as unittest
 
 # module under test.
 import vs_resource_backend
@@ -100,7 +100,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_xid_dlimits()
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   def testunit_get_backend_stats(self):
     test_stat_path = os.path.join(self._testdata_dir, 'proc_pid_stat')
@@ -109,7 +109,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_backend_stats(test_stat_path)
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   def testunit_get_backend_stats_WHEN_path_does_not_exist(self):
     bad_stat_path = os.path.join(self._testdata_dir, 'no_proc_pid_stat')
@@ -117,7 +117,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_backend_stats(bad_stat_path)
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   @mock.patch('__builtin__.open')
   def testunit_get_backend_stats_WHEN_path_RAISES_IOError(self, mock_open):
@@ -127,7 +127,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_backend_stats(test_stat_path)
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   def testunit_get_backend_stats_WHEN_bad_stat_data(self):
     bad_stat_path = os.path.join(self._testdata_dir, 'bad_proc_pid_stat')
@@ -135,7 +135,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_backend_stats(bad_stat_path)
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   def testunit_get_backend_stats_WHEN_data_RAISES_ValueError(self):
     bad_stat_path = os.path.join(self._testdata_dir, 'bad_proc_pid_stat2')
@@ -143,7 +143,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_backend_stats(bad_stat_path)
 
-    self.assertEqual(expected_value, returned_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   @mock.patch('vs_resource_backend.pwd')
   def testunit_get_xid_names(self, mock_pwd):
@@ -154,7 +154,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_xid_names()
 
-    self.assertEqual(returned_value, expected_value)
+    self.assertDictEqual(expected_value, returned_value)
  
   @mock.patch('vs_resource_backend.pwd')
   def testunit_get_xid_names_WHEN_getpwuid_RAISES_KeyError(self, mock_pwd):
@@ -164,7 +164,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_xid_names()
 
-    self.assertEqual(returned_value, expected_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   @mock.patch('vs_resource_backend.pwd')
   def testunit_get_xid_names_WHEN_pw_name_IS_invalid(self, mock_pwd):
@@ -175,7 +175,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.get_xid_names()
 
-    self.assertEqual(returned_value, expected_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   @mock.patch('vs_resource_backend.time')
   def testunit_report(self, mock_time):
@@ -188,7 +188,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     returned_value = vs_resource_backend.report('banana', mock_obj)
 
-    self.assertEqual(returned_value, expected_value)
+    self.assertDictEqual(expected_value, returned_value)
 
   @mock.patch('vs_resource_backend.syslog_err')
   def testunit_handle_message_WHEN_type_IS_unknown(
