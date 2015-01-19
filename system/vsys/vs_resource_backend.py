@@ -113,13 +113,13 @@ def init_libvserver():
   global _LIBVSERVER
   lib = ctypes.util.find_library("vserver")
   if lib is None:
-    syslog_err('failed to find vserver library')
+    syslog_err('Failed to find vserver library.')
     return False
 
   try:
     _LIBVSERVER = ctypes.cdll.LoadLibrary(lib)
   except OSError as err:
-    syslog_err('failed to load vserver library: %s' % err)
+    syslog_err('Failed to load vserver library: %s' % err)
     return False
 
   return True
@@ -138,7 +138,7 @@ def vc_get_dlimit(filename, xid):
   """
   if _LIBVSERVER is None:
     if not init_libvserver():
-      return [0, 0, 0, 0, 0]
+      raise LibVserverError('Failed to initialize libvserver.')
 
   c_limit = vc_ctx_dlimit()
   c_filename = ctypes.c_char_p(filename)
