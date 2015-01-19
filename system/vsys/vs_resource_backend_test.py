@@ -255,38 +255,40 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     mock_syslog.syslog.assert_has_calls(expected_calls)
 
   @mock.patch('vs_resource_backend.handle_message')
-  @mock.patch('vs_resource_backend.sys')
-  def testunit_handle_request(self, mock_sys, mock_handle_message):
-    mock_sys.stdin.readline.return_value = 'backend_stats\n'
+  @mock.patch('vs_resource_backend.sys.stdout')
+  @mock.patch('vs_resource_backend.sys.stdin')
+  def testunit_handle_request(
+      self, mock_stdin, mock_stdout, mock_handle_message):
+    mock_stdin.readline.return_value = 'backend_stats\n'
     mock_handle_message.return_value = '{"version": 1, "data": "fake reply"}'
     expected_value = '{"version": 1, "data": "fake reply"}\n'
 
     vs_resource_backend.handle_request()
     
-    mock_sys.stdout.write.assert_called_with(expected_value)
+    mock_stdout.write.assert_called_with(expected_value)
 
-  @mock.patch('vs_resource_backend.sys')
-  def testunit_handle_request_WHEN_readline_RAISES_eof(self, mock_sys):
-    mock_sys.stdin.readline.return_value = ''
+  @mock.patch('vs_resource_backend.sys.stdin')
+  def testunit_handle_request_WHEN_readline_RAISES_eof(self, mock_stdin):
+    mock_stdin.readline.return_value = ''
 
     self.assertRaises(vs_resource_backend.EndOfFileError,
                       vs_resource_backend.handle_request)
 
   @mock.patch('vs_resource_backend.syslog_err')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.stdin')
   def testunit_handle_request_WHEN_message_IS_incomplete(
-      self, mock_sys, mock_syslog_err):
-    mock_sys.stdin.readline.return_value = 'incomplete_message_without_newline'
+      self, mock_stdin, mock_syslog_err):
+    mock_stdin.readline.return_value = 'incomplete_message_without_newline'
 
     vs_resource_backend.handle_request()
 
     mock_syslog_err.assert_called_once()
 
   @mock.patch('vs_resource_backend.handle_message')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.stdin')
   def testunit_handle_request_WHEN_handle_message_RETURNS_nothing(
-      self, mock_sys, mock_handle_message):
-    mock_sys.stdin.readline.return_value = 'token backend_stats\n'
+      self, mock_stdin, mock_handle_message):
+    mock_stdin.readline.return_value = 'token backend_stats\n'
     mock_handle_message.return_value = None
 
     vs_resource_backend.handle_request()
@@ -294,49 +296,50 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     mock_handle_message.assert_called_once()
 
   @mock.patch('vs_resource_backend.handle_message')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.stdout')
+  @mock.patch('vs_resource_backend.sys.stdin')
   def testunit_handle_request_WHEN_write_RAISES_ioerror(
-      self, mock_sys, mock_handle_message):
-    mock_sys.stdin.readline.return_value = 'token backend_stats\n'
+      self, mock_stdin, mock_stdout, mock_handle_message):
+    mock_stdin.readline.return_value = 'token backend_stats\n'
     expected_value = 'token {"version": 1, "data": "fake reply"}\n'
     mock_handle_message.return_value = expected_value
-    mock_sys.stdout.write.side_effect = IOError(errno.EPIPE, 'fake ioerror')
+    mock_stdout.write.side_effect = IOError(errno.EPIPE, 'fake ioerror')
 
     self.assertRaises(IOError, vs_resource_backend.handle_request)
 
   @mock.patch('vs_resource_backend.handle_request')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.exit')
   def testunit_main_WHEN_request_RAISES_eof(
-      self, mock_sys, mock_handle_request):
+      self, mock_exit, mock_handle_request):
     mock_handle_request.side_effect = (
         vs_resource_backend.EndOfFileError('fake eof'))
     
     vs_resource_backend.main()
 
     mock_handle_request.assert_called_once()
-    mock_sys.exit.assert_called_with(0)
+    mock_exit.assert_called_with(0)
     
   @mock.patch('vs_resource_backend.handle_request')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.exit')
   def testunit_main_WHEN_request_RAISES_ioerror(
-      self, mock_sys, mock_handle_request):
+      self, mock_exit, mock_handle_request):
     mock_handle_request.side_effect = IOError(-1, 'fake ioerror')
     
     vs_resource_backend.main()
 
     mock_handle_request.assert_called_once()
-    mock_sys.exit.assert_called_with(1)
+    mock_exit.assert_called_with(1)
 
   @mock.patch('vs_resource_backend.handle_request')
-  @mock.patch('vs_resource_backend.sys')
+  @mock.patch('vs_resource_backend.sys.exit')
   def testunit_main_WHEN_request_RAISES_other_exception(
-      self, mock_sys, mock_handle_request):
+      self, mock_exit, mock_handle_request):
     mock_handle_request.side_effect = Exception('fake eof')
     
     vs_resource_backend.main()
 
     mock_handle_request.assert_called_once()
-    mock_sys.exit.assert_called_with(1)
+    mock_exit.assert_called_with(1)
 
 
 if __name__ == "__main__":
