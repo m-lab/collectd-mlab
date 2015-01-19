@@ -43,7 +43,7 @@ The vs_resource_backend supports three commands:
 
 The JSON reply has some standard attributes:
   version: int, the version of this backend script.
-  ts: float, timestamp of request.
+  ts: float, timestamp of request in seconds.
   message_type: str, the name of the command in request.
   data: obj, the result of the command.
 
