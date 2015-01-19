@@ -154,7 +154,7 @@ def vc_get_dlimit(filename, xid):
   ret = [c_limit.space_used,
          c_limit.space_total,
          c_limit.inodes_used,
-         -1 if 2**32-1 == c_limit.inodes_total else c_limit.inodes_total,
+         -1 if (2 ** 32) - 1 == c_limit.inodes_total else c_limit.inodes_total,
          c_limit.reserved]
   return ret
 
