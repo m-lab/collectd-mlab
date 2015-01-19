@@ -311,7 +311,6 @@ def handle_message(message_type):
 
 def handle_request():
   """Handles request by reading from stdin, and dispatching request."""
-
   line = sys.stdin.readline(_MAX_MESSAGE_LENGTH)
   if not line:
     raise EndOfFileError('Received EOF. Exiting.')
