@@ -61,22 +61,22 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     self.assertEqual(returned_result, expected_result)
 
   @mock.patch('vs_resource_backend.ctypes.util')
-  def testunit_vc_get_dlimit_WHEN_vserver_lib_not_found(self, mock_ctypes_util):
+  def testunit_vc_get_dlimit_WHEN_vserver_lib_not_found_RAISES_LibVserverError(
+      self, mock_ctypes_util):
     mock_ctypes_util.find_library.return_value = None
-    expected_result = [0, 0, 0, 0, 0]
 
-    returned_result = vs_resource_backend.vc_get_dlimit('/vservers', 515)
-
-    self.assertEqual(returned_result, expected_result)
+    self.assertRaises(
+        vs_resource_backend.LibVserverError, vs_resource_backend.vc_get_dlimit,
+        '/vservers', 515)
 
   @mock.patch('vs_resource_backend.ctypes.util')
-  def testunit_vc_get_dlimit_WHEN_vserver_load_fails(self, mock_ctypes_util):
+  def testunit_vc_get_dlimit_WHEN_vserver_load_fails_RAISES_LibVserverError(
+      self, mock_ctypes_util):
     mock_ctypes_util.find_library.return_value = 'not-a-real-library'
-    expected_result = [0, 0, 0, 0, 0]
 
-    returned_result = vs_resource_backend.vc_get_dlimit('/vservers', 515)
-
-    self.assertEqual(returned_result, expected_result)
+    self.assertRaises(
+        vs_resource_backend.LibVserverError, vs_resource_backend.vc_get_dlimit,
+        '/vservers', 515)
 
   @mock.patch('vs_resource_backend.vc_get_dlimit')
   def testunit_get_xid_dlimits(self, mock_vc_get_dlimit):
