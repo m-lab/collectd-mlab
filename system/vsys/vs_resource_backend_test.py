@@ -13,12 +13,12 @@
 # limitations under the License.
 """Unit tests for vsys vs_resource_backend script."""
 
-import os
 import errno
+import os
 import pwd
 import unittest
 
-# third-party
+# Third-party packages.
 import mock
 
 # module under test.
