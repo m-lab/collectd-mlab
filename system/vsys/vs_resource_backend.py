@@ -166,40 +166,51 @@ def syslog_err(msg):
       syslog.syslog(syslog.LOG_ERR, 'vs_resource_backend: %s' % message)
 
 
+def get_vserver_xids(vs_prefix_dir):
+  """Lists all vserver xids found in the vs_prefix_dir directory.
+
+  Args:
+    vs_prefix_dir: str, path to the root of vserver /proc directory.
+  Returns:
+    list of int, where each int is an xid found in vs_prefix_dir.
+  """
+  xids = []
+  for entry in os.listdir(vs_prefix_dir):
+    entry_path = os.path.join(vs_prefix_dir, entry)
+    if not os.path.isdir(entry_path):
+      continue
+    try:
+      xid = int(entry)
+    except ValueError:
+      syslog_err('Failed to convert xid entry to int: %s' % entry)
+      continue
+    xids.append(xid)
+  return xids
+
+
 def get_xid_names():
   """Fulfills the vs_xid_names request.
 
   Returns:
     dict, keys are vserver xids as string, values are vserver names as string.
   """
-  vs_prefix = _VS_PREFIX_DIR
   xid_names = {}
 
-  for entry in os.listdir(vs_prefix):
-    entry_path = os.path.join(vs_prefix, entry)
-    if not os.path.isdir(entry_path):
-      continue
-
+  for xid in get_vserver_xids(_VS_PREFIX_DIR):
     try:
-      # On PlanetLab xid is set to uid.
-      xid = int(entry)
-    except ValueError:
-      syslog_err('Failed to convert expected xid: %s' % entry)
-      continue
-
-    try:
+      # On PlanetLab, uid is set to equal the vserver xid.
       pw_entry = pwd.getpwuid(xid)
     except KeyError:
       # This is serious. A vserver is running without passwd entry.
-      syslog_err('Failed to find /etc/passwd entry for xid: %s' % entry)
+      syslog_err('Failed to find /etc/passwd entry for xid: %d' % xid)
       continue
 
     vs_name = pw_entry.pw_name
     if not vs_name:
-      syslog_err('pw_entry.pw_name is zero length for xid: %s' % entry)
+      syslog_err('pw_entry.pw_name is zero length for xid: %d' % xid)
       continue
 
-    xid_names[entry] = vs_name
+    xid_names[str(xid)] = vs_name
 
   return xid_names
 
@@ -210,19 +221,9 @@ def get_xid_dlimits():
   Returns:
     dict, keys are xids as string, values are 5-element lists with dlimits.
   """
-  vs_prefix = _VS_PREFIX_DIR
   xid_dlimits = {}
 
-  for entry in os.listdir(vs_prefix):
-    entry_path = os.path.join(vs_prefix, entry)
-    if not os.path.isdir(entry_path):
-      continue
-
-    try:
-      xid = int(entry)
-    except ValueError:
-      continue
-    
+  for xid in get_vserver_xids(_VS_PREFIX_DIR):
     try:
       dlim = vc_get_dlimit('/vservers', xid)
     except LibVserverError as err:
@@ -230,7 +231,7 @@ def get_xid_dlimits():
       syslog_err('vc_get_dlimit failed: %s' % err)
       continue
 
-    xid_dlimits[entry] = dlim
+    xid_dlimits[str(xid)] = dlim
 
   return xid_dlimits
 
