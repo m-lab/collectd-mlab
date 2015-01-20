@@ -147,8 +147,8 @@ def vc_get_dlimit(filename, xid):
   err = _LIBVSERVER.vc_get_dlimit(
       c_filename, c_xid, ctypes.c_uint32(0), ctypes.byref(c_limit))
 
-  if err == -1:
-    raise LibVserverError('Failed to get dlimits for %s' % xid)
+  if err != 0:
+    raise LibVserverError('Failed to get dlimits for xid %s: %s' % (xid, err))
 
   # '-1' means no quota.
   ret = [c_limit.space_used,
