@@ -258,9 +258,6 @@ def get_backend_stats(stat_path):
 
   backend_stats = {'utime': 0, 'stime': 0, 'vsize': 0, 'rss': 0}
 
-  if not os.path.exists(stat_path):
-    return backend_stats
-
   try:
     stat_fields = open(stat_path, 'r').read().strip().split()
   except IOError as err:
