@@ -240,11 +240,13 @@ def get_backend_stats(stat_path):
   """Fulfills the backend_stats request.
 
   Returns:
-    dict, with process time and memory usage stats. Includes:
-        utime: user time, cumulative USER_HZ.
-        stime: system time, cumulative USER_HZ.
-        vsize: virtual memory size, bytes,
-        rss: resident set size, bytes.
+    dict, with process time and memory usage stats. Keys include:
+        utime: float, cumulative time scheduled in user mode, in hundredths of a
+            second.
+        stime: float, cumulative time scheduled in kernel mode, in hundredths of
+            a second.
+        vsize: int, virtual memory size, bytes,
+        rss: int, resident set size, bytes.
   """
   index_utime = 13
   index_stime = 14
