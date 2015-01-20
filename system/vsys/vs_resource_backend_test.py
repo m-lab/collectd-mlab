@@ -86,7 +86,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
     dlim = [0, 1, 2, 3, 4]
     mock_vc_get_dlimit.return_value = dlim
-    expected_value = {'515': dlim[:]}
+    expected_value = {'515': list(dlim)}
 
     returned_value = vs_resource_backend.get_xid_dlimits()
 
