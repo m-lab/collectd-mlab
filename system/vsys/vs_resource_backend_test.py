@@ -40,6 +40,7 @@ def fake_vc_get_dlimit(
   limit.inodes_used = 20
   limit.inodes_total = (2 ** 32) - 1
   limit.reserved = 2
+  return 0
 
 
 class MlabVsResourceBackendTests(unittest.TestCase):
