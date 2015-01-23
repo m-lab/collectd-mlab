@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# runtests runs pylint and coverage checks on all *_test.py and tested modules.
+#
+# Normal operation is to execute runtests with no arguments. Optionally,
+# runtests accepts a single argument for the name of a test file.
+# 
+# Example:
+#   ./runtests config/mlab_test.py
+#
+# To report additional status information during the coverage report.
+#   DEBUG=1 ./runtests [test_file]
+#
+
+if test -z "$( type -p coverage )" ; then
+  echo "please install python-mock"
+  echo "please install python-coverage"
+  exit 1
+fi
+
+if test -z "$( type -p pylint )" ; then
+  echo "please install pylint"
+  exit 1
+fi
+
+# Only test the first command line argument (if present), otherwise test all
+# files that end with _test.py.
+TEST_FILES=${1:-$( find ./ -name "*_test.py" )}
+
+# If DEBUG is set, enable verbose coverage status ("-v") during the run.
+VERBOSE_COVERAGE=${DEBUG:+-v}
+
+# Exit on first execution error.
+set -e
+
+# Set coverage reports output path to base directory for combination later.
+export COVERAGE_FILE="$PWD/.coverage"
+HTMLDIR="$PWD/coverage-report"
+mkdir -p "${HTMLDIR}"
+
+# Erase old reports.
+coverage -e
+rm -f .coverage*
+
+for filename in ${TEST_FILES} ; do
+  # Run pylint on file and the test.
+  # A non-zero exit status will exit runtests.
+  echo "${filename}"
+  pylint ${filename/_test/}
+  pylint ${filename}
+  pushd $(dirname $filename) > /dev/null
+    # Run coverage on the test (which imports the file itself). 
+    basefile=$(basename $filename)
+    echo coverage -p -x ${basefile} ${VERBOSE_COVERAGE}
+    coverage -p -x ${basefile} ${VERBOSE_COVERAGE}
+  popd > /dev/null
+done
+
+# Combine all reports above.
+coverage -c
+
+# Generate HTML report, storing output to HTMLDIR.
+coverage -b -d "${HTMLDIR}"
