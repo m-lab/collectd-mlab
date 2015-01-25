@@ -482,7 +482,7 @@ class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
     # should be updated.
     mlab.plugin_shutdown()
 
-    mock_info.assert_called_once()
+    self.assertTrue(mock_info.called)
 
   @mock.patch('mlab.os.getpid')
   def testcover_plugin_initialize(self, mock_getpid):
@@ -499,7 +499,7 @@ class MlabCollectdPlugin_CoverageTests(unittest.TestCase):
     # Wrong value types are logged and ignored.
     mlab.submit_generic('fake.host', 'plugin', 'type', 'wrong value type')
 
-    mock_error.assert_called_once()
+    self.assertTrue(mock_error.called)
 
 
 class MlabCollectdPlugin_UnitTests(unittest.TestCase):
