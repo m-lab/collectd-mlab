@@ -13,16 +13,16 @@
 # limitations under the License.
 """Unit tests for collectd-mlab."""
 
-import os
 import errno
+import os
 import StringIO
 import time
 import unittest
 
-# third-party
+# Third-party modules.
 import mock
 
-# module under test.
+# Module under test.
 import mlab_export
 
 # Too many public methods. Hard to avoid for unit tests.
