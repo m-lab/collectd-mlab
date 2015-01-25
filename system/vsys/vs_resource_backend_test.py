@@ -196,7 +196,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
       self, mock_syslog_err):
     returned_value = vs_resource_backend.handle_message('unknown')
 
-    mock_syslog_err.assert_called_once()
+    self.assertTrue(mock_syslog_err.called)
     self.assertEqual(returned_value, None)
 
   @mock.patch('vs_resource_backend.get_backend_stats')
@@ -212,7 +212,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   
     returned_value = vs_resource_backend.handle_message('backend_stats')
 
-    mock_get_backend_stats.assert_called_once()
+    self.assertTrue(mock_get_backend_stats.called)
     self.assertEqual(returned_value, expected_value)
 
   @mock.patch('vs_resource_backend.get_xid_dlimits')
@@ -226,7 +226,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   
     returned_value = vs_resource_backend.handle_message('vs_xid_dlimits')
 
-    mock_get_xid_dlimits.assert_called_once()
+    self.assertTrue(mock_get_xid_dlimits.called)
     self.assertEqual(returned_value, expected_value)
 
   @mock.patch('vs_resource_backend.get_xid_names')
@@ -240,7 +240,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   
     returned_value = vs_resource_backend.handle_message('vs_xid_names')
 
-    mock_get_xid_names.assert_called_once()
+    self.assertTrue(mock_get_xid_names.called)
     self.assertEqual(returned_value, expected_value)
 
   @mock.patch('vs_resource_backend.syslog')
@@ -283,7 +283,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     vs_resource_backend.handle_request()
 
-    mock_syslog_err.assert_called_once()
+    self.assertTrue(mock_syslog_err.called)
 
   @mock.patch('vs_resource_backend.handle_message')
   @mock.patch('vs_resource_backend.sys.stdin')
@@ -294,7 +294,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
 
     vs_resource_backend.handle_request()
     
-    mock_handle_message.assert_called_once()
+    self.assertTrue(mock_handle_message.called)
 
   @mock.patch('vs_resource_backend.handle_message')
   @mock.patch('vs_resource_backend.sys.stdout')
@@ -317,7 +317,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     
     vs_resource_backend.main()
 
-    mock_handle_request.assert_called_once()
+    self.assertTrue(mock_handle_request.called)
     mock_exit.assert_called_with(0)
     
   @mock.patch('vs_resource_backend.handle_request')
@@ -328,7 +328,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     
     vs_resource_backend.main()
 
-    mock_handle_request.assert_called_once()
+    self.assertTrue(mock_handle_request.called)
     mock_exit.assert_called_with(1)
 
   @mock.patch('vs_resource_backend.handle_request')
@@ -339,7 +339,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     
     vs_resource_backend.main()
 
-    mock_handle_request.assert_called_once()
+    self.assertTrue(mock_handle_request.called)
     mock_exit.assert_called_with(1)
 
 
