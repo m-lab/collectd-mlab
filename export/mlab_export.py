@@ -51,6 +51,7 @@ Examples:
   # Show the collectd-nagios command line for checking each metric.
   ./mlab-export.py --show_nagios
 """
+import ConfigParser
 import fcntl
 import gzip
 import json
@@ -59,7 +60,6 @@ import os
 import socket
 import sys
 import time
-import ConfigParser
 
 # Third-party modules.
 import gflags as flags
