@@ -1,0 +1,6 @@
+#
+# Runs hourly to export the latest hour of collectd-mlab data to json.
+#
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+
+11 * * * * root	 /usr/bin/mlab_export.py --compress > /dev/null
