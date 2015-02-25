@@ -252,7 +252,6 @@ def default_start_time(options, ts_previous):
   Returns:
     int, timestamp in seconds since the epoch.
   """
-  # Only when both options.update and ts_previous are set, skip assignment.
   if not (options.update and ts_previous):
     # If either update or ts_previous were not set, then choose a default.
     ts_previous = options.ts_end - options.length
