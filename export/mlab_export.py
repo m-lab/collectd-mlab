@@ -55,6 +55,7 @@ Examples:
   ./mlab_export.py --show_nagios
 """
 import ConfigParser
+import contextlib
 import fcntl
 import gzip
 import json
@@ -456,29 +457,28 @@ def rrd_export(options):
     open_func = gzip.open
     options.output += '.gz'
   make_output_dirs(options.output)
-  fd_output = open_func(options.output, 'w')
-  for filename in get_rrd_files(options.rrddir_prefix):
-    time_range, value_names, data = rrdtool.fetch(
-        filename, 'AVERAGE', '--start', str(options.ts_start), '--end',
-        str(options.ts_end))
-    # W0142 is the use of "* magic". These are legitimate use-cases.
-    # 1) time_range is a 3-tuple (start, end, step): i.e. arguments to range.
-    # 2) data is a list of tuples, which are transposed by zip.
-    #    i.e. [(a,), (b,), ...] -> [(a,b,...)]
-    # pylint: disable=W0142
-    timestamps = range(*time_range)
-    values = zip(*data)
-    # pylint: enable=W0142
+  with contextlib.closing(open_func(options.output, 'w')) as fd_output:
+    for filename in get_rrd_files(options.rrddir_prefix):
+      time_range, value_names, data = rrdtool.fetch(
+          filename, 'AVERAGE', '--start', str(options.ts_start), '--end',
+          str(options.ts_end))
+      # W0142 is the use of "* magic". These are legitimate use-cases.
+      # 1) time_range is a 3-tuple (start, end, step): i.e. arguments to range.
+      # 2) data is a list of tuples, which are transposed by zip.
+      #    i.e. [(a,), (b,), ...] -> [(a,b,...)]
+      # pylint: disable=W0142
+      timestamps = range(*time_range)
+      values = zip(*data)
+      # pylint: enable=W0142
 
-    for i, value_name in enumerate(value_names):
-      hostname, experiment, metric = get_canonical_names(
-          filename, value_name, options)
-      if metric is None or experiment in options.ignored_experiments:
-        continue
-      record = get_json_record(
-          hostname, experiment, metric, timestamps, values[i])
-      write_json_record(fd_output, record, options.pretty_json)
-  fd_output.close()
+      for i, value_name in enumerate(value_names):
+        hostname, experiment, metric = get_canonical_names(
+            filename, value_name, options)
+        if metric is None or experiment in options.ignored_experiments:
+          continue
+        record = get_json_record(
+            hostname, experiment, metric, timestamps, values[i])
+        write_json_record(fd_output, record, options.pretty_json)
 
 
 def read_metric_map(filename):
