@@ -332,8 +332,10 @@ def get_canonical_names(filename, value_name, options):
   Returns:
     (str, str, str), with HOSTNAME, experiment name, metric name.
   """
-  # Strip rrddir_prefix and split directory components.
-  file_fields = filename.replace(options.rrddir_prefix, '').split('/')
+  # Strip rrddir_prefix, remove rrd extension, and split directory components.
+  short_filename = filename.replace(options.rrddir_prefix, '', 1)
+  short_filename, _ = os.path.splitext(short_filename)
+  file_fields = short_filename.split('/')
 
   # The zeroth field is always the context hostname.
   if HOSTNAME == file_fields[0]:
@@ -343,12 +345,9 @@ def get_canonical_names(filename, value_name, options):
     # A slice hostname. Everything remaining after stripping hostname.
     experiment = file_fields[0].replace('.' + HOSTNAME, '')
 
-  raw_fields = file_fields[1:-1]
-  raw_fields.append(file_fields[-1].replace('.rrd', ''))
+  metric_raw = '.'.join(file_fields[1:])
   if value_name != 'value':
-    raw_fields.append(value_name)
-
-  metric_raw = '.'.join(raw_fields)
+    metric_raw += '.' + value_name
 
   # NOTE: convert the raw metric name into the canonical form, or None.
   metric = METRIC_MAP.get(metric_raw, None)
@@ -358,11 +357,11 @@ def get_canonical_names(filename, value_name, options):
     cmd = ('collectd-nagios -s $COLLECTD_UNIXSOCK -H {host} '+
            '-n {metric} -d {value} [-w <l:h> -c <l:h>]')
     cmd = cmd.format(host=file_fields[0],
-                     metric='/'.join(file_fields[1:]).replace('.rrd', ''),
+                     metric='/'.join(file_fields[1:]),
                      value=value_name)
     logging.info(cmd)
   if options.show_rrdfile:
-    logging.info("rrdfile: %s", filename.replace(options.rrddir_prefix, ''))
+    logging.info("rrdfile: %s", filename)
   if options.show_rawmetric:
     logging.info("metric_raw: %s", metric_raw)
   if options.show_skipped and not metric:
