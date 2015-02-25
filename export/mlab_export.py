@@ -317,7 +317,7 @@ def make_output_dirs(output_name):
     output_name: str, absolute path of an output file.
   """
   dir_name = os.path.dirname(output_name)
-  if not os.path.exists(dir_name):
+  if dir_name and not os.path.exists(dir_name):
     os.makedirs(dir_name)
 
 
@@ -433,9 +433,9 @@ def get_rrd_files(rrddir_prefix):
   rrdfiles = []
   for root, _, filenames in os.walk(rrddir_prefix):
     for filename in filenames:
-      file_ext = os.path.join(root, filename)
-      if file_ext.endswith('.rrd'):
-        rrdfiles.append(os.path.abspath(file_ext))
+      if filename.endswith('.rrd'):
+        full_path = os.path.abspath(os.path.join(root, filename))
+        rrdfiles.append(full_path)
   return rrdfiles
 
 
