@@ -335,7 +335,7 @@ def get_canonical_names(filename, value_name, options):
   # Strip rrddir_prefix, remove rrd extension, and split directory components.
   short_filename = filename.replace(options.rrddir_prefix, '', 1)
   short_filename, _ = os.path.splitext(short_filename)
-  file_fields = short_filename.split('/')
+  file_fields = short_filename.split(os.path.sep)
 
   # The zeroth field is always the context hostname.
   if HOSTNAME == file_fields[0]:
@@ -357,7 +357,7 @@ def get_canonical_names(filename, value_name, options):
     cmd = ('collectd-nagios -s $COLLECTD_UNIXSOCK -H {host} '+
            '-n {metric} -d {value} [-w <l:h> -c <l:h>]')
     cmd = cmd.format(host=file_fields[0],
-                     metric='/'.join(file_fields[1:]),
+                     metric=os.path.join(file_fields[1:]),
                      value=value_name)
     logging.info(cmd)
   if options.show_rrdfile:
@@ -549,9 +549,9 @@ def init_args(options, ts_previous):
   if any_show_options(options):
     options.update = False
 
-  if options.rrddir_prefix[-1] != '/':
+  if options.rrddir_prefix[-1] != os.path.sep:
     # Ensure that the last character of rrddir_prefix includes path separator.
-    options.rrddir_prefix += '/'
+    options.rrddir_prefix += os.path.sep
 
   if options.update:
     assert_start_and_end_times(options)
