@@ -94,7 +94,7 @@ flags.DEFINE_integer(
     'ts_end', None,
     'Timestamp to end export, in seconds since the epoch.', lower_bound=0)
 flags.DEFINE_integer(
-    'ts_offset', 900, 'Amount of time (seconds) that must have past after '
+    'ts_offset', 600, 'Amount of time (seconds) that must have passed after '
     'ts_end to ensure that values cached by collectd have been flushed to disk '
     'before attempting an export.', lower_bound=0)
 flags.DEFINE_multistring(
