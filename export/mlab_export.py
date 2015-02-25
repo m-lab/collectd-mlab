@@ -290,7 +290,10 @@ def default_output_name(ts_start, ts_end, output_dir):
 
   Filenames are formatted with time stamps as:
       <output_dir>/resource-utilization/YYYY/MM/DD/<HOSTNAME>/
-          metrics-YYYYMMDDTHHMMSS-to-YYYYMMDDTHHMMSS.json
+          metrics-<ts_start>-to-<ts_end>.json
+
+  The YYYY, MM, DD in the path are taken from ts_start.
+  Both <ts_start> and <ts_end> are formatted as: YYYYMMDDTHHMMSS
 
   Args:
     ts_start: int, starting timestamp of export in seconds since the epoch.
@@ -305,9 +308,17 @@ def default_output_name(ts_start, ts_end, output_dir):
   date_path = time.strftime('%Y/%m/%d', time.localtime(ts_start))
   full_path = os.path.join(
       output_dir, 'resource-utilization', date_path, HOSTNAME)
-  if not os.path.exists(full_path):
-    os.makedirs(full_path)
   return os.path.join(full_path, filename)
+
+
+def make_output_dirs(output_name):
+  """Creates directory path to filename, if it does not exist.
+  Args:
+    output_name: str, absolute path of an output file.
+  """
+  dir_name = os.path.dirname(output_name)
+  if not os.path.exists(dir_name):
+    os.makedirs(dir_name)
 
 
 def get_canonical_names(filename, value_name, options):
@@ -445,6 +456,7 @@ def rrd_export(options):
   if options.compress:
     open_func = gzip.open
     options.output += '.gz'
+  make_output_dirs(options.output)
   fd_output = open_func(options.output, 'w')
   for filename in get_rrd_files(options.rrddir_prefix):
     (time_range, value_names, data) = rrdtool.fetch(
