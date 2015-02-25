@@ -35,21 +35,21 @@ Overview of default operation:
 
 Examples:
   # Default operation should not require additional parameters.
-  ./mlab-export.py
+  ./mlab_export.py
 
   # Useful for testing, --noupdate exports the last hour without the
   # side-effects of modifying the mtime of LAST_EXPORT_FILENAME.
-  ./mlab-export.py --noupdate --output example.json
+  ./mlab_export.py --noupdate --output example.json
 
   # To export a different set of metrics than the global default.
-  ./mlab-export.py --noupdate --output example.json --export_metrics metrics.cfg
+  ./mlab_export.py --noupdate --output example.json --export_metrics metrics.cfg
 
   # List rrd file names, the raw metric names, or the canonical metric names.
-  ./mlab-export.py --show_rrdfile
-  ./mlab-export.py --show_rawmetric --show_metric
+  ./mlab_export.py --show_rrdfile
+  ./mlab_export.py --show_rawmetric --show_metric
 
   # Show the collectd-nagios command line for checking each metric.
-  ./mlab-export.py --show_nagios
+  ./mlab_export.py --show_nagios
 """
 import ConfigParser
 import fcntl
