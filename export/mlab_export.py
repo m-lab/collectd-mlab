@@ -236,7 +236,7 @@ def default_end_time(options):
   ts_end = align_timestamp(ts_end, options.step)
 
   if options.update and (ts_current - ts_end) < options.ts_offset:
-    raise TimeOptionError('ts_current - ts_end < min offset: %s - %s < %s' %
+    raise TimeOptionError('ts_current - ts_end < ts_offset: %s - %s < %s' %
         (ts_current, ts_end, options.ts_offset))
   return ts_end
 
