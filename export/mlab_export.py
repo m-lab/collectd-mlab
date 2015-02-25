@@ -405,7 +405,7 @@ def get_json_record_samples(timestamps, values):
   """
   samples = []
   assert(len(timestamps) == len(values))
-  for i in xrange(0, len(timestamps)):
+  for i in xrange(len(timestamps)):
     if values[i] is not None:
       samples.append({'timestamp': timestamps[i], 'value': values[i]})
   return samples
