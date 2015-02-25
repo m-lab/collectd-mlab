@@ -44,6 +44,9 @@ Examples:
   # To export a different set of metrics than the global default.
   ./mlab_export.py --noupdate --output example.json --export_metrics metrics.cfg
 
+  # To export "pretty" json more suitable for debugging.
+  ./mlab_export.py --noupdate --pretty_json --output example.json
+
   # List rrd file names, the raw metric names, or the canonical metric names.
   ./mlab_export.py --show_rrdfile
   ./mlab_export.py --show_rawmetric --show_metric
