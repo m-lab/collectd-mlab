@@ -219,7 +219,7 @@ def align_timestamp(timestamp, step):
 
 
 def default_end_time(options):
-  """Calculates a default, end timestamp.
+  """Calculates a default end timestamp.
 
   Args:
     options: flags.FlagValues, the runtime options. These values are read:
