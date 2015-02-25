@@ -442,7 +442,7 @@ def get_rrd_files(rrddir_prefix):
 def rrd_list(options):
   """Processes all options.show_* flags without performing an export."""
   for filename in get_rrd_files(options.rrddir_prefix):
-    (_, value_names, _) = rrdtool.fetch(
+    _, value_names, _ = rrdtool.fetch(
         filename, 'AVERAGE', '--start', str(options.ts_start), '--end',
         str(options.ts_end))
     for value_name in value_names:
@@ -458,7 +458,7 @@ def rrd_export(options):
   make_output_dirs(options.output)
   fd_output = open_func(options.output, 'w')
   for filename in get_rrd_files(options.rrddir_prefix):
-    (time_range, value_names, data) = rrdtool.fetch(
+    time_range, value_names, data = rrdtool.fetch(
         filename, 'AVERAGE', '--start', str(options.ts_start), '--end',
         str(options.ts_end))
     # W0142 is the use of "* magic". These are legitimate use-cases.
