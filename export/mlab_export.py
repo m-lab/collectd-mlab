@@ -93,7 +93,9 @@ flags.DEFINE_integer(
     'Timestamp to start export, in seconds since the epoch.', lower_bound=0)
 flags.DEFINE_integer(
     'ts_end', None,
-    'Timestamp to end export, in seconds since the epoch.', lower_bound=0)
+    'Timestamp to end export, in seconds since the epoch. Only use this option '
+    'for debugging. Normally, ts_end is calculated automatically from: '
+    'ts_start + length.', lower_bound=0)
 flags.DEFINE_integer(
     'ts_offset', 600, 'Amount of time (seconds) that must have passed after '
     'ts_end to ensure that values cached by collectd have been flushed to disk '
@@ -219,45 +221,33 @@ def align_timestamp(timestamp, step):
   return timestamp - (timestamp % step)
 
 
-def default_end_time(options):
-  """Calculates a default end timestamp.
-
-  Args:
-    options: flags.FlagValues, the runtime options. These values are read:
-        options.length, options.step, options.update, options.ts_offset.
-  Returns:
-    int, timestamp in seconds since the epoch.
-  """
-  ts_current = int(time.time())
-
-  # Align current ts to a multiple of length.
-  ts_end = align_timestamp(ts_current, options.length)
-
-  # Align end ts to a multiple of step size (just in case).
-  ts_end = align_timestamp(ts_end, options.step)
-
-  if options.update and (ts_current - ts_end) < options.ts_offset:
-    raise TimeOptionError('ts_current - ts_end < ts_offset: %s - %s < %s' %
-        (ts_current, ts_end, options.ts_offset))
-  return ts_end
-
-
 def default_start_time(options, ts_previous):
   """Calculates a default start timestamp.
 
   Args:
     options: flags.FlagValues, the runtime options. These values are read:
-        options.length, options.step, options.update, options.ts_end.
+        options.length, options.step, options.update, options.ts_offset.
     ts_previous: int, timestamp in seconds since epoch of last
         successful export. On first run, this value should be zero.
   Returns:
     int, timestamp in seconds since the epoch.
   """
-  if not (options.update and ts_previous):
-    # If either update or ts_previous were not set, then choose a default.
-    ts_previous = options.ts_end - options.length
+  if ts_previous:
+    # Typical: start from the end time of previous runs.
+    return align_timestamp(ts_previous, options.step)
 
-  return align_timestamp(ts_previous, options.step)
+  ts_current = int(time.time())
+
+  # Since ts_previous is not set, this is a "first run" scenario.
+  if not options.update:
+    # Unlikely: first run by a user. Start as close to 'now' as possible.
+    start = ts_current - options.length - options.ts_offset
+  else:
+    # Likely: first, automated export. Start at previous 'length' aligned time.
+    start = align_timestamp(ts_current, options.length) - options.length
+
+  # Align end ts to a multiple of step size (just in case).
+  return align_timestamp(start, options.step)
 
 
 def assert_start_and_end_times(options):
@@ -273,11 +263,11 @@ def assert_start_and_end_times(options):
     TimeOptionError, if a start & end time constraint is violated.
   """
   # Always check if basic constratins are respected.
-  if options.ts_end < options.ts_start:
-    raise TimeOptionError('Start time cannot be later than end time.')
+  if options.ts_end <= options.ts_start:
+    raise TimeOptionError('Start time must precede end time.')
 
-  if options.ts_end - options.ts_start < options.length:
-    msg = ('Start and end times difference is less than length: '+
+  if options.ts_end - options.ts_start != options.length:
+    msg = ('Difference between ts_start and ts_end times must equal length: ' +
            '%s - %s = %s < %s' % (options.ts_end, options.ts_start,
            (options.ts_end - options.ts_start), options.length))
     raise TimeOptionError(msg)
@@ -540,11 +530,12 @@ def init_args(options, ts_previous):
   if options.verbose:
     logging.basicConfig(level=logging.DEBUG)
 
-  if options.ts_end is None:
-    options.ts_end = default_end_time(options)
-
   if options.ts_start is None:
     options.ts_start = default_start_time(options, ts_previous)
+
+  if options.ts_end is None:
+    options.ts_end = (
+        align_timestamp(options.ts_start, options.step) + options.length)
 
   if any_show_options(options):
     options.update = False
@@ -553,8 +544,7 @@ def init_args(options, ts_previous):
     # Ensure that the last character of rrddir_prefix includes path separator.
     options.rrddir_prefix += os.path.sep
 
-  if options.update:
-    assert_start_and_end_times(options)
+  assert_start_and_end_times(options)
 
   if options.output is None:
     options.output = default_output_name(
