@@ -72,6 +72,7 @@ import rrdtool
 
 COLLECTD_INTERVAL = 10
 EXPORT_DIR = '/var/spool/mlab_utility'
+EXPORT_LOCKFILE = os.path.join(EXPORT_DIR, 'mlab_export.lock')
 HOSTNAME = None
 LAST_EXPORT_FILENAME = '/var/lib/collectd/lastexport.tstamp'
 LIST_OPTIONS = ('rrdfile', 'metric', 'metric_raw', 'metric_skipped')
@@ -151,62 +152,51 @@ def init_global():
   logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 
-class LastTime(object):
-  """Manages interactions with export timestamp."""
+class LockFile(object):
+  """Provides a file-based lock."""
 
   def __init__(self, filename):
     self._filename = filename
-    self._lock_handle = None
-    self._first_creation = not os.path.exists(self._filename)
+    self._handle = None
 
-  def __enter__(self):
-    self.open()
-    return self
+  def acquire(self):
+    """Acquires file lock on filename. Raises IOError on failure."""
+    self._handle = open(self._filename, 'w')
+    fcntl.flock(self._handle, fcntl.LOCK_EX|fcntl.LOCK_NB)
 
-  def __exit__(self, *unused_args):
-    self.close()
+  def release(self):
+    """Releases file lock on filename."""
+    self._handle.close()
 
-  def open(self):
-    """Opens the timestamp file, and creates the file if it does not exist."""
-    if self._first_creation:
-      # Since the file does not exist, use mode 'w' to create it.
-      self._lock_handle = open(self._filename, 'w')
-    else:
-      # File *does* exist, so use mode 'r' to preserve the mtime on the file.
-      self._lock_handle = open(self._filename, 'r')
 
-  def close(self):
-    """Closes the timestamp file."""
-    if self._lock_handle is not None:
-      self._lock_handle.close()
+def get_mtime(last_export_filename):
+  """Returns the file mtime, or zero if last_export_filename was created.
 
-  def get_mtime(self):
-    """Returns the file mtime, or zero if file was just created."""
-    if self._first_creation:
-      # Indicate that there is no timestamp, so the caller can use a default.
-      return 0
-    return int(os.stat(self._filename).st_mtime)
+  Args:
+    last_export_filename: str, absolute path to last export time stamp file.
+  Returns:
+    int, 0 if the file was created, or the mtime of existing file.
+  Raises:
+    IOError, if last_export_filename does not exist and cannot be created.
+    OSError, if last_export_filename exists but stat info cannot be read.
+  """
+  if not os.path.exists(last_export_filename):
+    open(last_export_filename, 'w').close()
+    # Indicate that there is no timestamp, so the caller can use a default.
+    return 0
+  return int(os.stat(last_export_filename).st_mtime)
 
-  def update_mtime(self, mtime):
-    """Updates the atime & mtime on the export timestamp file."""
-    os.utime(self._filename, (mtime, mtime))
 
-  def lock(self):
-    """Attempt to acquire advisory lock on export timestamp file.
+def update_mtime(last_export_filename, mtime):
+  """Updates the atime & mtime on the export timestamp file.
 
-    This method returns immediatly.
-
-    Returns:
-      bool, True if the lock is acquired, False otherwise.
-    """
-    # Attempt an exclusive lock without blocking. On success, fcntl.flock()
-    # returns no value. On error, it throws IOError EAGAIN "temporarily
-    # unavailable."
-    try:
-      fcntl.flock(self._lock_handle, fcntl.LOCK_EX|fcntl.LOCK_NB)
-      return True
-    except IOError:
-      return False
+  Args:
+    last_export_filename: str, absolute path to last export time stamp file.
+    mtime: int, timestamp in seconds since epoch; used for file atime & mtime.
+  Raises:
+    OSError, if last_export_filename mtime cannot be updated.
+  """
+  os.utime(last_export_filename, (mtime, mtime))
 
 
 def align_timestamp(timestamp, step):
@@ -573,21 +563,28 @@ def parse_args(ts_previous):
 def main():
   init_global()
 
-  with LastTime(LAST_EXPORT_FILENAME) as last_export_time:
-    if not last_export_time.lock():
-      logging.error('Failed to lock: %s', LAST_EXPORT_FILENAME)
-      sys.exit(1)
+  try:
+    lock_file = LockFile(EXPORT_LOCKFILE)
+    lock_file.acquire()
+  except IOError as err:
+    logging.error('Failed to acquire lockfile %s: %s', EXPORT_LOCKFILE, err)
+    sys.exit(1)
 
+  try:
     options = parse_args(last_export_time.get_mtime())
-
     if any_show_options(options):
       rrd_list(options)
-
     else:
       rrd_export(options)
       # Update last_export mtime only once everything completes successfully.
       if options.update:
         last_export_time.update_mtime(options.ts_end)
+        update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
+  except Exception as err:
+    logging.error('Failure: %s', err)
+    sys.exit(1)
+  finally:
+    lock_file.release()
 
 
 if __name__ == '__main__':  # pragma: no cover.
