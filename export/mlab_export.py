@@ -571,14 +571,13 @@ def main():
     sys.exit(1)
 
   try:
-    options = parse_args(last_export_time.get_mtime())
+    options = parse_args(get_mtime(LAST_EXPORT_FILENAME))
     if any_show_options(options):
       rrd_list(options)
     else:
       rrd_export(options)
       # Update last_export mtime only once everything completes successfully.
       if options.update:
-        last_export_time.update_mtime(options.ts_end)
         update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
   except Exception as err:
     logging.error('Failure: %s', err)
