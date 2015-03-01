@@ -340,51 +340,56 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     mock_get_canonical_names.assert_called_with('file1', 'value', mock_options)
 
-  # TODO: account for make_output_dirs @mock.patch('mlab_export.os.makedirs')
+  @mock.patch('mlab_export.make_output_dirs')
   @mock.patch('mlab_export.get_rrd_files')
   @mock.patch('mlab_export.rrdtool.fetch')
   @mock.patch('mlab_export.get_canonical_names')
   @mock.patch('gzip.open')
   @mock.patch('StringIO.StringIO.close')
   def testunit_rrd_export(
-      self, mock_close, mock_open, mock_get_canonical_names, mock_rrdtool_fetch,
-      mock_get_rrd_files):
+      self, mock_close, mock_open, mock_get_canonical_names,
+      mock_rrdtool_fetch, mock_get_rrd_files, mock_make_output_dirs):
     str_fd = StringIO.StringIO()
     mock_open.return_value = str_fd
     mock_get_rrd_files.return_value = ['file1']
     mock_rrdtool_fetch.return_value = [
-        (0, 10, 10), ['value', 'skipped_metric'], [(0.0,0.0)]]
+        (0, 10, 10), ['value', 'unknown_metric', 'ignored_metric'],
+        [(0.0, 1.0, 2.0)]]
     mock_get_canonical_names.side_effect = [
-        ('fake_hostname', 'fake_experiment', 'fake_metric'),
-        ('fake_hostname', 'fake_experiment', None)]
+        ('fake_hostname', 'fake_experiment', 'fake_metric_name'),
+        ('fake_hostname', 'fake_experiment', None),
+        ('fake_hostname', 'ignore_experiment', 'fake_metric_name')]
     mock_options = mock.Mock()
     mock_options.rrddir_prefix = os.path.join(self._testdata_dir, 'rrd')
-    mock_options.ignored_experiments = []
+    mock_options.ignored_experiments = ['ignore_experiment']
     mock_options.pretty_json = None
     mock_options.compress = True
     mock_options.output = 'output'
     mock_options.ts_start = 0
     mock_options.ts_end = 10
-    expected_value = ('{"sample": [{"timestamp": 0, "value": 0.0}], '
-                      '"metric": "fake_metric", "hostname": "fake_hostname", '
-                      '"experiment": "fake_experiment"}\n')
+    expected_value = (
+        '{"sample": [{"timestamp": 0, "value": 0.0}], '
+        '"metric": "fake_metric_name", "hostname": "fake_hostname", '
+        '"experiment": "fake_experiment"}\n')
 
     mlab_export.rrd_export(mock_options)
     returned_value = str_fd.getvalue()
 
     self.assertEqual(returned_value, expected_value)
-    mock_get_canonical_names.assert_called_with(
-        'file1', 'skipped_metric', mock_options)
+    mock_get_canonical_names.assert_any_call('file1', 'value', mock_options)
+    mock_get_canonical_names.assert_any_call(
+        'file1', 'unknown_metric', mock_options)
+    mock_get_canonical_names.assert_any_call(
+        'file1', 'ignored_metric', mock_options)
     mock_open.assert_called_with('output.gz', 'w')
     self.assertTrue(mock_close.called)
+    self.assertTrue(mock_make_output_dirs.called)
 
   @mock.patch('mlab_export.default_output_name')
-  @mock.patch('mlab_export.assert_start_and_end_times')
   @mock.patch('mlab_export.default_start_time')
   @mock.patch('mlab_export.read_metric_map')
   def testunit_init_args(self, mock_read_metric_map,
                          mock_default_start_time,
-                         mock_assert_start_and_end_times,
                          mock_default_output_name):
     mock_options = disable_show_options(mock.Mock())
     mock_options.rrddir_prefix = os.path.join(self._testdata_dir, 'rrd')
