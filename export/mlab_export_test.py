@@ -147,18 +147,9 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertTrue(mock_error.called)
 
   def testunit_align_timestamp(self):
-    fake_ts = 1410341339
-    expected_6 = fake_ts - 5
-    expected_10 = fake_ts - 9
-    expected_30 = fake_ts - 29
-
-    ts_6 = mlab_export.align_timestamp(fake_ts, 6)
-    ts_10 = mlab_export.align_timestamp(fake_ts, 10)
-    ts_30 = mlab_export.align_timestamp(fake_ts, 30)
-
-    self.assertEqual(ts_6, expected_6)
-    self.assertEqual(ts_10, expected_10)
-    self.assertEqual(ts_30, expected_30)
+    self.assertEqual(mlab_export.align_timestamp(16, 6), 12)
+    self.assertEqual(mlab_export.align_timestamp(32, 10), 30)
+    self.assertEqual(mlab_export.align_timestamp(64, 30), 60)
 
   def testunit_default_start_time_WHEN_ts_previous_IS_nonzero(self):
     # Typical behavior occurs when the timestamp file aleady exists and
