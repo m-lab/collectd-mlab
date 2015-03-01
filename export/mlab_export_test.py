@@ -28,6 +28,9 @@ import mlab_export
 # Too many public methods. Hard to avoid for unit tests.
 # pylint: disable=R0904
 
+# Static timestamp for unittests.
+FAKE_TIMESTAMP = 1410001000
+
 
 def disable_show_options(options):
   """Sets all show options to False."""
@@ -55,75 +58,56 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab_export.__file__), 'testdata')
 
-  def testunit_LastTime(self):
+  def testunit_get_mtime_RETURNS_mtime(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    # Artificially set fake timestamp to one hour ago.
-    one_hour_ago = int(time.time() - 3600)
-    os.utime(fake_tstamp, (one_hour_ago, one_hour_ago))
+    os.utime(fake_tstamp, (FAKE_TIMESTAMP, FAKE_TIMESTAMP))
     
-    with mlab_export.LastTime(fake_tstamp) as last_time:
-      return_lock = last_time.lock()
-      return_tstamp = last_time.get_mtime()
+    returned_tstamp = mlab_export.get_mtime(fake_tstamp)
 
-    self.assertTrue(return_lock)
-    self.assertEqual(one_hour_ago, return_tstamp)
+    self.assertEqual(FAKE_TIMESTAMP, returned_tstamp)
 
-  def testunit_LastTime_first_creation_RETURNS_zero(self):
+  def testunit_get_mtime_WHEN_timestamp_file_created_RETURNS_zero(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'no_such_file.tstamp')
     # Make sure that fake timestamp file actually doesn't exist.
     if os.path.exists(fake_tstamp):
       os.remove(fake_tstamp)
     
-    last_time = mlab_export.LastTime(fake_tstamp)
-    last_time.open()
-    return_lock = last_time.lock()
-    return_tstamp = last_time.get_mtime()
-    last_time.close()
+    returned_tstamp = mlab_export.get_mtime(fake_tstamp)
 
-    self.assertTrue(return_lock)
-    self.assertEqual(0, return_tstamp)
+    self.assertEqual(0, returned_tstamp)
 
   @mock.patch('mlab_export.os.utime')
-  def testunit_LastTime_update_mtime(self, mock_utime):
+  def testunit_update_mtime(self, mock_utime):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    fake_time = int(time.time())
 
-    last_time = mlab_export.LastTime(fake_tstamp)
-    last_time.open()
-    last_time.update_mtime(fake_time)
-    last_time.close()
+    mlab_export.update_mtime(fake_tstamp, FAKE_TIMESTAMP)
     
-    mock_utime.assert_called_with(fake_tstamp, (fake_time, fake_time))
+    mock_utime.assert_called_with(fake_tstamp, (FAKE_TIMESTAMP, FAKE_TIMESTAMP))
 
-  @mock.patch('mlab_export.fcntl')
-  def testunit_LastTime_already_locked_RETURNS_False(self, mock_fcntl):
-    mock_fcntl.flock.side_effect = IOError(errno.EAGAIN, 'fake ioerror')
+  def testunit_LockFile_acquire_WHEN_locked_RAISES_IOError(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    
-    last_time = mlab_export.LastTime(fake_tstamp)
-    last_time.open()
-    return_lock = last_time.lock()  # Should fail.
-    last_time.close()
 
-    self.assertFalse(return_lock)
+    lock1 = mlab_export.LockFile(fake_tstamp)
+    lock1.acquire()
+    lock2 = mlab_export.LockFile(fake_tstamp)
 
-  @mock.patch('mlab_export.logging.error')
-  @mock.patch('mlab_export.LastTime.lock')
-  def testcover_main_exit(self, mock_last_time_lock, mock_error):
+    self.assertRaises(IOError, lock2.acquire)
+
+  @mock.patch('mlab_export.LockFile.acquire')
+  def testcover_main_exit(self, mock_lock_file_acquire):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    mlab_export.LAST_EXPORT_FILENAME = fake_tstamp
-    mock_last_time_lock.return_value = False
+    mlab_export.EXPORT_LOCKFILE = fake_tstamp
+    mock_lock_file_acquire.side_effect = IOError('already locked.')
 
     self.assertRaises(SystemExit, mlab_export.main)
 
-    self.assertTrue(mock_last_time_lock.called)
-    self.assertTrue(mock_error.called)
+    self.assertTrue(mock_lock_file_acquire.called)
 
   @mock.patch('mlab_export.parse_args')
   @mock.patch('mlab_export.rrd_list')
   def testcover_main_list(self, mock_rrd_list, mock_parse_args):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    mlab_export.LAST_EXPORT_FILENAME = fake_tstamp
+    mlab_export.EXPORT_LOCKFILE = fake_tstamp
     mock_options = disable_show_options(mock.Mock())
     mock_options.show_nagios = True  # Enable one show option.
     mock_parse_args.return_value = mock_options
@@ -141,8 +125,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mock_options = disable_show_options(mock.Mock())
     mock_options.update = True
     mock_options.rrddir_prefix = mlab_export.RRD_PREFIX
-    mock_options.ts_start = time.time() - 60*60
-    mock_options.ts_end = time.time()
+    mock_options.ts_start = FAKE_TIMESTAMP - 60*60
+    mock_options.ts_end = FAKE_TIMESTAMP
     mock_parse_args.return_value = mock_options
 
     mlab_export.main()
@@ -176,56 +160,29 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertEqual(ts_10, expected_10)
     self.assertEqual(ts_30, expected_30)
 
-  @mock.patch('mlab_export.time.time')
-  def testunit_default_end_time(self, mock_time):
-    mock_time.return_value = 1401401409
+  def testunit_default_start_time_WHEN_ts_previous_IS_nonzero(self):
+    # Typical behavior occurs when the timestamp file aleady exists and
+    # ts_previous is non-zero.
     mock_options = mock.Mock()
-    mock_options.length = 3600
     mock_options.step = 10
-    mock_options.update = False
-    expected_ts_end = 1401400800
-
-    returned_ts_end = mlab_export.default_end_time(mock_options)
-
-    self.assertEqual(returned_ts_end, expected_ts_end)
-
-  @mock.patch('mlab_export.time.time')
-  def testunit_default_end_time_WHEN_short_length_RAISES_TimeOptionError(
-      self, mock_time):
-    mock_time.return_value = 1401401409
-    mock_options = mock.Mock()
-    mock_options.length = 600
-    mock_options.ts_offset = 100
-    mock_options.step = 10
-    mock_options.update = True
-
-    self.assertRaises(
-        mlab_export.TimeOptionError, mlab_export.default_end_time, mock_options)
-
-  def testunit_default_start_time_WHEN_using_default_behavior(self):
-    # Default behavior is --update=True and a non-zero ts_previous value
-    # because the timestamp file aleady exists.
-    mock_options = mock.Mock()
-    mock_options.update = True
-    mock_options.step = 10
-    ts_previous = 1401401409
-    expected_start = 1401401400
+    ts_previous = FAKE_TIMESTAMP + 9  # ts_previous is not alignted with step.
+    expected_start = FAKE_TIMESTAMP  # But, it will be.
 
     returned_start = mlab_export.default_start_time(mock_options, ts_previous)
 
     self.assertEqual(returned_start, expected_start)
 
-  def testunit_default_start_time_WHEN_first_run(self):
+  @mock.patch('mlab_export.time.time')
+  def testunit_default_start_time_WHEN_ts_previous_IS_zero(self, mock_time):
     # On first run, ts_previous is zero b/c the timestamp file was just created.
+    mock_time.return_value = FAKE_TIMESTAMP
     mock_options = mock.Mock()
     mock_options.update = True
     mock_options.step = 10
-    mock_options.length = 3600
-    mock_options.ts_end = 1401401409 + mock_options.length
-    expected_start = 1401401400
-    ts_previous = 0
+    mock_options.length = 1000
+    expected_start = FAKE_TIMESTAMP - 1000
 
-    returned_start = mlab_export.default_start_time(mock_options, ts_previous)
+    returned_start = mlab_export.default_start_time(mock_options, 0)
 
     self.assertEqual(returned_start, expected_start)
 
@@ -241,26 +198,25 @@ class MlabExport_GlobalTests(unittest.TestCase):
     except mlab_export.TimeOptionError as err:
       self.fail('Unexpected exception: %s' % err)
 
+    # TODO: check return value instead of logging.called.
     self.assertTrue(mock_logging.called)
 
   def testunit_assert_times_WHEN_end_is_before_start_RAISES_TimeOptionError(
       self):
     mock_options = mock.Mock()
-    mock_options.length = 3600
-    mock_options.ts_end = 1401401408
-    mock_options.ts_start = 1401401409
+    mock_options.ts_end = FAKE_TIMESTAMP
+    mock_options.ts_start = FAKE_TIMESTAMP + 1
 
     self.assertRaises(mlab_export.TimeOptionError,
                       mlab_export.assert_start_and_end_times, mock_options)
 
-  def testunit_assert_start_and_end_times_WHEN_too_short_RAISES_TimeOptionError(
-      self):
+  def testunit_assert_times_WHEN_length_too_short_RAISES_TimeOptionError(self):
     mock_options = mock.Mock()
     mock_options.length = 3600
-    # Start & end should be at least 'length' apart. Subtract 1 to the
-    # difference too short.
-    mock_options.ts_end = 1401401409 + mock_options.length - 1
-    mock_options.ts_start = 1401401409
+    # Start & end should be at least 'length' apart. Subtract 1 so the
+    # difference is too short.
+    mock_options.ts_start = FAKE_TIMESTAMP
+    mock_options.ts_end = FAKE_TIMESTAMP + mock_options.length - 1
 
     self.assertRaises(mlab_export.TimeOptionError,
                       mlab_export.assert_start_and_end_times, mock_options)
@@ -403,6 +359,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     mock_get_canonical_names.assert_called_with('file1', 'value', mock_options)
 
+  # TODO: account for make_output_dirs @mock.patch('mlab_export.os.makedirs')
   @mock.patch('mlab_export.get_rrd_files')
   @mock.patch('mlab_export.rrdtool.fetch')
   @mock.patch('mlab_export.get_canonical_names')
@@ -442,11 +399,10 @@ class MlabExport_GlobalTests(unittest.TestCase):
   @mock.patch('mlab_export.default_output_name')
   @mock.patch('mlab_export.assert_start_and_end_times')
   @mock.patch('mlab_export.default_start_time')
-  @mock.patch('mlab_export.default_end_time')
   @mock.patch('mlab_export.logging.basicConfig')
   @mock.patch('mlab_export.read_metric_map')
   def testunit_init_args(self, mock_read_metric_map, mock_logging,
-                         mock_default_end_time, mock_default_start_time,
+                         mock_default_start_time,
                          mock_assert_start_and_end_times,
                          mock_default_output_name):
     mock_options = disable_show_options(mock.Mock())
@@ -469,23 +425,20 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertTrue(mock_read_metric_map.called)
     self.assertTrue(mock_logging.called)
     self.assertTrue(mock_default_start_time.called)
-    self.assertTrue(mock_default_end_time.called)
     self.assertTrue(mock_assert_start_and_end_times.called)
     self.assertTrue(mock_default_output_name.called)
     self.assertEqual(mock_options.rrddir_prefix[-1], '/')
 
-  @mock.patch('mlab_export.os.makedirs')
-  def testunit_default_output_name(self, mock_makedirs):
+  def testunit_default_output_name(self):
     mlab_export.HOSTNAME = 'mlab2.nuq0t'
-    expected_value = ('/output/resource-utilization/2014/09/12/mlab2.nuq0t/'
-                      'metrics-20140912T105000-to-20140912T115000.json')
-    start = 1410519000
+    expected_value = ('/output/resource-utilization/2014/09/06/mlab2.nuq0t/'
+                      'metrics-20140906T105640-to-20140906T115640.json')
+    start = FAKE_TIMESTAMP
     end = start + 3600
 
     returned_value = mlab_export.default_output_name(start, end, '/output')
 
     self.assertEqual(returned_value, expected_value)
-    self.assertTrue(mock_makedirs.called)
 
 
 if __name__ == "__main__":
