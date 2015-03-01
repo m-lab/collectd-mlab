@@ -207,6 +207,17 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertRaises(mlab_export.TimeOptionError,
                       mlab_export.assert_start_and_end_times, mock_options)
 
+  def testunit_default_output_name(self):
+    mlab_export.HOSTNAME = 'mlab2.nuq0t'
+    expected_value = ('/output/resource-utilization/2014/09/06/mlab2.nuq0t/'
+                      'metrics-20140906T105640-to-20140906T115640.json')
+    start = FAKE_TIMESTAMP
+    end = start + 3600
+
+    returned_value = mlab_export.default_output_name(start, end, '/output')
+
+    self.assertEqual(returned_value, expected_value)
+
   def testunit_read_metric_map(self):
     fake_metric_conf = os.path.join(self._testdata_dir, 'sample_metrics.conf')
     expected_map = {'cpu_cores.gauge': 'cpu.cores',
@@ -397,17 +408,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertTrue(mock_assert_start_and_end_times.called)
     self.assertTrue(mock_default_output_name.called)
     self.assertEqual(mock_options.rrddir_prefix[-1], '/')
-
-  def testunit_default_output_name(self):
-    mlab_export.HOSTNAME = 'mlab2.nuq0t'
-    expected_value = ('/output/resource-utilization/2014/09/06/mlab2.nuq0t/'
-                      'metrics-20140906T105640-to-20140906T115640.json')
-    start = FAKE_TIMESTAMP
-    end = start + 3600
-
-    returned_value = mlab_export.default_output_name(start, end, '/output')
-
-    self.assertEqual(returned_value, expected_value)
 
 
 if __name__ == "__main__":
