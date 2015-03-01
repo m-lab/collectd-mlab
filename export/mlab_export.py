@@ -297,8 +297,11 @@ def default_output_name(ts_start, ts_end, output_dir):
 
 def make_output_dirs(output_name):
   """Creates directory path to filename, if it does not exist.
+
   Args:
     output_name: str, absolute path of an output file.
+  Raises:
+    OSError, if directory cannot be created.
   """
   dir_name = os.path.dirname(output_name)
   if dir_name and not os.path.exists(dir_name):
@@ -434,7 +437,12 @@ def rrd_list(options):
 
 
 def rrd_export(options):
-  """Exports all RRD data."""
+  """Exports all RRD data.
+
+  Raises:
+    OSError, if output directory cannot be created.
+    IOError, if output file cannot be created or written.
+  """
   open_func = open
   if options.compress:
     open_func = gzip.open
@@ -560,7 +568,11 @@ def parse_args(ts_previous):
   except flags.FlagsError, err:
     logging.error('%s\nUsage: %s ARGS\n%s', err, sys.argv[0], flags.FLAGS)
     sys.exit(1)
-  return init_args(flags.FLAGS, ts_previous)
+  try:
+    return init_args(flags.FLAGS, ts_previous)
+  except TimeOptionError as err:
+    logging.error(err)
+    sys.exit(1)
 
 
 def main():
@@ -582,7 +594,7 @@ def main():
       # Update last_export mtime only once everything completes successfully.
       if options.update:
         update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
-  except Exception as err:
+  except (OSError, IOError) as err:
     logging.error('Failure: %s', err)
     sys.exit(1)
   finally:
