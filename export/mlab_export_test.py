@@ -58,6 +58,19 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self._testdata_dir = os.path.join(
         os.path.dirname(mlab_export.__file__), 'testdata')
 
+  def testcover_init_global(self):
+    mlab_export.init_global()
+
+  def testunit_LockFile_acquire_WHEN_locked_RAISES_IOError(self):
+    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
+
+    lock1 = mlab_export.LockFile(fake_tstamp)
+    lock1.acquire()
+    lock2 = mlab_export.LockFile(fake_tstamp)
+
+    self.assertRaises(IOError, lock2.acquire)
+    lock1.release()
+
   def testunit_get_mtime_RETURNS_mtime(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
     os.utime(fake_tstamp, (FAKE_TIMESTAMP, FAKE_TIMESTAMP))
@@ -84,65 +97,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
     
     mock_utime.assert_called_with(fake_tstamp, (FAKE_TIMESTAMP, FAKE_TIMESTAMP))
 
-  def testunit_LockFile_acquire_WHEN_locked_RAISES_IOError(self):
-    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-
-    lock1 = mlab_export.LockFile(fake_tstamp)
-    lock1.acquire()
-    lock2 = mlab_export.LockFile(fake_tstamp)
-
-    self.assertRaises(IOError, lock2.acquire)
-
-  @mock.patch('mlab_export.LockFile.acquire')
-  def testcover_main_exit(self, mock_lock_file_acquire):
-    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    mlab_export.EXPORT_LOCKFILE = fake_tstamp
-    mock_lock_file_acquire.side_effect = IOError('already locked.')
-
-    self.assertRaises(SystemExit, mlab_export.main)
-
-    self.assertTrue(mock_lock_file_acquire.called)
-
-  @mock.patch('mlab_export.parse_args')
-  @mock.patch('mlab_export.rrd_list')
-  def testcover_main_list(self, mock_rrd_list, mock_parse_args):
-    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    mlab_export.EXPORT_LOCKFILE = fake_tstamp
-    mock_options = disable_show_options(mock.Mock())
-    mock_options.show_nagios = True  # Enable one show option.
-    mock_parse_args.return_value = mock_options
-
-    mlab_export.main()
-
-    self.assertTrue(mock_parse_args.called)
-    self.assertTrue(mock_rrd_list.called)
-
-  @mock.patch('mlab_export.parse_args')
-  @mock.patch('mlab_export.rrd_export')
-  def testcover_main_export(self, mock_rrd_export, mock_parse_args):
-    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
-    mlab_export.LAST_EXPORT_FILENAME = fake_tstamp
-    mock_options = disable_show_options(mock.Mock())
-    mock_options.update = True
-    mock_options.rrddir_prefix = mlab_export.RRD_PREFIX
-    mock_options.ts_start = FAKE_TIMESTAMP - 60*60
-    mock_options.ts_end = FAKE_TIMESTAMP
-    mock_parse_args.return_value = mock_options
-
-    mlab_export.main()
-
-    self.assertTrue(mock_parse_args.called)
-    self.assertTrue(mock_rrd_export.called)
-
-  def testcover_init_global(self):
-    mlab_export.init_global()
-
-  def testcover_parse_args(self):
-    mlab_export.sys.argv = [
-        'mlab_export.py', '--bad-argument', '--causes-error']
-
-    self.assertRaises(SystemExit, mlab_export.parse_args, 0)
-
   def testunit_align_timestamp(self):
     self.assertEqual(mlab_export.align_timestamp(16, 6), 12)
     self.assertEqual(mlab_export.align_timestamp(32, 10), 30)
@@ -153,7 +107,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
     # ts_previous is non-zero.
     mock_options = mock.Mock()
     mock_options.step = 10
-    ts_previous = FAKE_TIMESTAMP + 9  # ts_previous is not alignted with step.
+    ts_previous = FAKE_TIMESTAMP + 9  # ts_previous is not aligned with step.
     expected_start = FAKE_TIMESTAMP  # But, it will be.
 
     returned_start = mlab_export.default_start_time(mock_options, ts_previous)
@@ -217,32 +171,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
     returned_value = mlab_export.default_output_name(start, end, '/output')
 
     self.assertEqual(returned_value, expected_value)
-
-  def testunit_read_metric_map(self):
-    fake_metric_conf = os.path.join(self._testdata_dir, 'sample_metrics.conf')
-    expected_map = {'cpu_cores.gauge': 'cpu.cores',
-                    'uptime.uptime': 'system.uptime'}
-
-    returned_map = mlab_export.read_metric_map(fake_metric_conf)
-
-    self.assertEqual(returned_map, expected_map)
-
-  def testunit_read_metric_map_WHEN_no_file(self):
-    fake_metric_conf = os.path.join(self._testdata_dir, 'no_such_metrics.conf')
-
-    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
-
-  def testunit_read_metric_map_WHEN_config_parse_error(self):
-    fake_metric_conf = os.path.join(
-        self._testdata_dir, 'sample_metrics_with_error.conf')
-
-    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
-
-  def testunit_read_metric_map_WHEN_config_is_missing_metrics_section(self):
-    fake_metric_conf = os.path.join(
-        self._testdata_dir, 'sample_metrics_missing_section.conf')
-
-    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
 
   def testunit_get_canonical_names(self):
     mock_options = enable_show_options(mock.Mock())
@@ -385,6 +313,32 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertTrue(mock_close.called)
     self.assertTrue(mock_make_output_dirs.called)
 
+  def testunit_read_metric_map(self):
+    fake_metric_conf = os.path.join(self._testdata_dir, 'sample_metrics.conf')
+    expected_map = {'cpu_cores.gauge': 'cpu.cores',
+                    'uptime.uptime': 'system.uptime'}
+
+    returned_map = mlab_export.read_metric_map(fake_metric_conf)
+
+    self.assertEqual(returned_map, expected_map)
+
+  def testunit_read_metric_map_WHEN_no_file(self):
+    fake_metric_conf = os.path.join(self._testdata_dir, 'no_such_metrics.conf')
+
+    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
+
+  def testunit_read_metric_map_WHEN_config_parse_error(self):
+    fake_metric_conf = os.path.join(
+        self._testdata_dir, 'sample_metrics_with_error.conf')
+
+    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
+
+  def testunit_read_metric_map_WHEN_config_is_missing_metrics_section(self):
+    fake_metric_conf = os.path.join(
+        self._testdata_dir, 'sample_metrics_missing_section.conf')
+
+    self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
+
   @mock.patch('mlab_export.default_output_name')
   @mock.patch('mlab_export.default_start_time')
   @mock.patch('mlab_export.read_metric_map')
@@ -416,6 +370,53 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertEqual(mock_options.ts_end, FAKE_TIMESTAMP + 1000)
     self.assertEqual(mock_options.output, 'fake-output-name')
     self.assertTrue(mock_options.rrddir_prefix.endswith('/'))
+
+  def testcover_parse_args(self):
+    mlab_export.sys.argv = [
+        'mlab_export.py', '--bad-argument', '--causes-error']
+
+    self.assertRaises(SystemExit, mlab_export.parse_args, 0)
+
+  @mock.patch('mlab_export.LockFile.acquire')
+  def testcover_main_exit(self, mock_lock_file_acquire):
+    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
+    mlab_export.EXPORT_LOCKFILE = fake_tstamp
+    mock_lock_file_acquire.side_effect = IOError('already locked.')
+
+    self.assertRaises(SystemExit, mlab_export.main)
+
+    self.assertTrue(mock_lock_file_acquire.called)
+
+  @mock.patch('mlab_export.parse_args')
+  @mock.patch('mlab_export.rrd_list')
+  def testcover_main_list(self, mock_rrd_list, mock_parse_args):
+    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
+    mlab_export.EXPORT_LOCKFILE = fake_tstamp
+    mock_options = disable_show_options(mock.Mock())
+    mock_options.show_nagios = True  # Enable one show option.
+    mock_parse_args.return_value = mock_options
+
+    mlab_export.main()
+
+    self.assertTrue(mock_parse_args.called)
+    self.assertTrue(mock_rrd_list.called)
+
+  @mock.patch('mlab_export.parse_args')
+  @mock.patch('mlab_export.rrd_export')
+  def testcover_main_export(self, mock_rrd_export, mock_parse_args):
+    fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
+    mlab_export.LAST_EXPORT_FILENAME = fake_tstamp
+    mock_options = disable_show_options(mock.Mock())
+    mock_options.update = True
+    mock_options.rrddir_prefix = mlab_export.RRD_PREFIX
+    mock_options.ts_start = FAKE_TIMESTAMP - 60*60
+    mock_options.ts_end = FAKE_TIMESTAMP
+    mock_parse_args.return_value = mock_options
+
+    mlab_export.main()
+
+    self.assertTrue(mock_parse_args.called)
+    self.assertTrue(mock_rrd_export.called)
 
 
 if __name__ == "__main__":
