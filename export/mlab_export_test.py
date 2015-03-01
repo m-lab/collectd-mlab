@@ -177,8 +177,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
   def testunit_assert_start_and_end_times(self):
     mock_options = mock.Mock()
     mock_options.length = 3600
-    mock_options.ts_end = 1401401409 + mock_options.length
-    mock_options.ts_start = 1401401409
+    mock_options.ts_end = FAKE_TIMESTAMP + mock_options.length
+    mock_options.ts_start = FAKE_TIMESTAMP
 
     try:
       returned_value = mlab_export.assert_start_and_end_times(mock_options)
