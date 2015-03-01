@@ -3,4 +3,28 @@
 #
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
 
-11 * * * * root	 /usr/bin/mlab_export.py --compress > /dev/null
+# Why run mlab_export.py at 10 minutes after the hour?
+#
+# Basically, we just need to guarantee that values cached by collectd have been
+# written to disk.
+#
+# All the details: With default settings, mlab_export.py saves data aligned on
+# the hour, e.g. 09:00 to 10:00. However, M-Lab's collectd configuration uses
+# the CacheTimeout option to batch disk writes to RRDs.
+# /etc/collectd-mlab.conf sets CacheTimeout to 300 seconds. Collectd guarantees
+# that it will *being* writting cached values after CacheTimeout but does not
+# guarantee *when the write completes*.
+#
+# So, to guarantee that all collectd data is available on disk when
+# mlab_export.py runs, the cron start time should be:
+#
+#   "--ts_end" + "CacheTimeout" + "safety factor"
+#
+# The mlab_export.py script enforces a safety factor of 5 minutes through the
+# --ts_offset flag. The --ts_offset option equals:
+#
+#   "CacheTimeout + safety factor" = 10 minutes.
+#
+# Thus, the cron start matches --ts_offset.
+#
+10 * * * * root	 /usr/bin/mlab_export.py --compress > /dev/null
