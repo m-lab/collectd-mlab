@@ -249,6 +249,8 @@ def assert_start_and_end_times(options):
   Args:
     options: flags.FlagValues, the runtime options. These values are read:
         options.length, options.ts_start, options.ts_end.
+  Returns:
+    True on success.
   Raises:
     TimeOptionError, if a start & end time constraint is violated.
   """
@@ -264,6 +266,7 @@ def assert_start_and_end_times(options):
 
   logging.debug('Exporting: %s to %s', time.ctime(options.ts_start),
                 time.ctime(options.ts_end))
+  return True
 
 
 def default_output_name(ts_start, ts_end, output_dir):
