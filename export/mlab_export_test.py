@@ -344,7 +344,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mock_rrdtool_fetch.return_value = [
         (0, 10, 10), ['value', 'skipped_metric'], [(0.0,0.0)]]
     mock_get_canonical_names.side_effect = [
-        ('host', 'exp', 'metric'), ('host', 'exp', None)]
+        ('fake_hostname', 'fake_experiment', 'fake_metric'),
+        ('fake_hostname', 'fake_experiment', None)]
     mock_options = mock.Mock()
     mock_options.rrddir_prefix = os.path.join(self._testdata_dir, 'rrd')
     mock_options.ignored_experiments = []
@@ -354,8 +355,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mock_options.ts_start = 0
     mock_options.ts_end = 10
     expected_value = ('{"sample": [{"timestamp": 0, "value": 0.0}], '
-                      '"metric": "metric", "hostname": "host", '
-                      '"experiment": "exp"}\n')
+                      '"metric": "fake_metric", "hostname": "fake_hostname", '
+                      '"experiment": "fake_experiment"}\n')
 
     mlab_export.rrd_export(mock_options)
     returned_value = str_fd.getvalue()
