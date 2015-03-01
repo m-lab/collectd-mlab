@@ -392,22 +392,25 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mock_options.pretty_json = None
     mock_options.compress = True
     mock_options.verbose = True
+    mock_options.update = True
+    mock_options.length = 1000
+    mock_options.step = 10
     mock_options.ts_end = None
     mock_options.ts_start = None
-    mock_options.update = True
     mock_options.output = None
-    mock_options.output_dir = '/output'
     mock_read_metric_map.return_value = {}
     mlab_export.HOSTNAME = 'mlab2.nuq0t'
+    mock_default_output_name.return_value = 'fake-output-name'
+    mock_default_start_time.return_value = FAKE_TIMESTAMP
     ts_previous = 0
 
     mlab_export.init_args(mock_options, ts_previous)
 
     self.assertTrue(mock_read_metric_map.called)
-    self.assertTrue(mock_default_start_time.called)
-    self.assertTrue(mock_assert_start_and_end_times.called)
-    self.assertTrue(mock_default_output_name.called)
-    self.assertEqual(mock_options.rrddir_prefix[-1], '/')
+    self.assertEqual(mock_options.ts_start, FAKE_TIMESTAMP)
+    self.assertEqual(mock_options.ts_end, FAKE_TIMESTAMP + 1000)
+    self.assertEqual(mock_options.output, 'fake-output-name')
+    self.assertTrue(mock_options.rrddir_prefix.endswith('/'))
 
 
 if __name__ == "__main__":
