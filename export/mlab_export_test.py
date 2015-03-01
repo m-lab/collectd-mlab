@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for collectd-mlab."""
 
+import logging
 import os
 import StringIO
 import unittest
@@ -28,6 +29,7 @@ import mlab_export
 
 # Static timestamp for unittests.
 FAKE_TIMESTAMP = 1410001000
+logging.basicConfig(filename='/dev/null')
 
 
 def disable_show_options(options):
@@ -135,14 +137,11 @@ class MlabExport_GlobalTests(unittest.TestCase):
   def testcover_init_global(self):
     mlab_export.init_global()
 
-  @mock.patch('mlab_export.logging.error')
-  def testcover_parse_args(self, mock_error):
+  def testcover_parse_args(self):
     mlab_export.sys.argv = [
         'mlab_export.py', '--bad-argument', '--causes-error']
 
     self.assertRaises(SystemExit, mlab_export.parse_args, 0)
-
-    self.assertTrue(mock_error.called)
 
   def testunit_align_timestamp(self):
     self.assertEqual(mlab_export.align_timestamp(16, 6), 12)
@@ -175,20 +174,18 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     self.assertEqual(returned_start, expected_start)
 
-  @mock.patch('mlab_export.logging.debug')
-  def testunit_assert_start_and_end_times(self, mock_logging):
+  def testunit_assert_start_and_end_times(self):
     mock_options = mock.Mock()
     mock_options.length = 3600
     mock_options.ts_end = 1401401409 + mock_options.length
     mock_options.ts_start = 1401401409
 
     try:
-      mlab_export.assert_start_and_end_times(mock_options)
+      returned_value = mlab_export.assert_start_and_end_times(mock_options)
     except mlab_export.TimeOptionError as err:
       self.fail('Unexpected exception: %s' % err)
 
-    # TODO: check return value instead of logging.called.
-    self.assertTrue(mock_logging.called)
+    self.assertTrue(returned_value)
 
   def testunit_assert_times_WHEN_end_is_before_start_RAISES_TimeOptionError(
       self):
@@ -219,32 +216,24 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     self.assertEqual(returned_map, expected_map)
 
-  @mock.patch('mlab_export.logging.error')
-  def testunit_read_metric_map_WHEN_no_file(self, mock_error):
+  def testunit_read_metric_map_WHEN_no_file(self):
     fake_metric_conf = os.path.join(self._testdata_dir, 'no_such_metrics.conf')
 
     self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
-    self.assertTrue(mock_error.called)
 
-  @mock.patch('mlab_export.logging.error')
-  def testunit_read_metric_map_WHEN_config_parse_error(self, mock_error):
+  def testunit_read_metric_map_WHEN_config_parse_error(self):
     fake_metric_conf = os.path.join(
         self._testdata_dir, 'sample_metrics_with_error.conf')
 
     self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
-    self.assertTrue(mock_error.called)
 
-  @mock.patch('mlab_export.logging.error')
-  def testunit_read_metric_map_WHEN_config_is_missing_metrics_section(
-      self, mock_error):
+  def testunit_read_metric_map_WHEN_config_is_missing_metrics_section(self):
     fake_metric_conf = os.path.join(
         self._testdata_dir, 'sample_metrics_missing_section.conf')
 
     self.assertRaises(SystemExit, mlab_export.read_metric_map, fake_metric_conf)
-    self.assertTrue(mock_error.called)
 
-  @mock.patch('mlab_export.logging.info')
-  def testunit_get_canonical_names(self, mock_logging):
+  def testunit_get_canonical_names(self):
     mock_options = enable_show_options(mock.Mock())
     mock_options.rrddir_prefix = '/var/lib/collectd/rrd/'
     fake_filename = '/var/lib/collectd/rrd/mlab2.nuq0t/disk-dm-0/disk_time.rrd'
@@ -263,11 +252,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertEqual(returned_host, expected_host)
     self.assertEqual(returned_experiment, expected_experiment)
     self.assertEqual(returned_metric, expected_metric)
-    self.assertTrue(mock_logging.called)
 
-  @mock.patch('mlab_export.logging.info')
-  def testunit_get_canonical_names_WHEN_experiment_and_skip_metric(
-      self, mock_logging):
+  def testunit_get_canonical_names_WHEN_experiment_and_skip_metric(self):
     mock_options = enable_show_options(mock.Mock())
     mock_options.rrddir_prefix = '/var/lib/collectd/rrd/'
     fake_filename = ('/var/lib/collectd/rrd/utility.mlab.mlab2.nuq0t/'
@@ -286,10 +272,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertEqual(returned_host, expected_host)
     self.assertEqual(returned_experiment, expected_experiment)
     self.assertEqual(returned_metric, expected_metric)
-    self.assertTrue(mock_logging.called)
 
-  @mock.patch('mlab_export.logging.debug')
-  def testunit_get_json_record(self, mock_logging):
+  def testunit_get_json_record(self):
     timestamps = [1, 2, 3]
     values = [10.0, 11.0, 12.0]
     expected_value = {'sample': [
@@ -305,7 +289,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
         values)
 
     self.assertEqual(returned_value, expected_value)
-    self.assertTrue(mock_logging.called)
 
   def testunit_write_json_record(self):
     output = StringIO.StringIO()
@@ -388,9 +371,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
   @mock.patch('mlab_export.default_output_name')
   @mock.patch('mlab_export.assert_start_and_end_times')
   @mock.patch('mlab_export.default_start_time')
-  @mock.patch('mlab_export.logging.basicConfig')
   @mock.patch('mlab_export.read_metric_map')
-  def testunit_init_args(self, mock_read_metric_map, mock_logging,
+  def testunit_init_args(self, mock_read_metric_map,
                          mock_default_start_time,
                          mock_assert_start_and_end_times,
                          mock_default_output_name):
@@ -412,7 +394,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mlab_export.init_args(mock_options, ts_previous)
 
     self.assertTrue(mock_read_metric_map.called)
-    self.assertTrue(mock_logging.called)
     self.assertTrue(mock_default_start_time.called)
     self.assertTrue(mock_assert_start_and_end_times.called)
     self.assertTrue(mock_default_output_name.called)
