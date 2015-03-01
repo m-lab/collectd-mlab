@@ -13,10 +13,8 @@
 # limitations under the License.
 """Unit tests for collectd-mlab."""
 
-import errno
 import os
 import StringIO
-import time
 import unittest
 
 # Third-party modules.
