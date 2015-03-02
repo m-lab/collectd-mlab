@@ -172,6 +172,14 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     self.assertEqual(returned_value, expected_value)
 
+  @mock.patch('mlab_export.os.makedirs')
+  def testunit_make_output_dirs(self, mock_makedirs):
+    fake_outputpath = '/some/path/to/a/basedir'
+
+    mlab_export.make_output_dirs(os.path.join(fake_outputpath, 'file.json'))
+
+    mock_makedirs.assert_called_with(fake_outputpath)
+
   def testunit_get_canonical_names(self):
     mock_options = enable_show_options(mock.Mock())
     mock_options.rrddir_prefix = '/var/lib/collectd/rrd/'
