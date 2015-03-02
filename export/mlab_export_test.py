@@ -371,9 +371,18 @@ class MlabExport_GlobalTests(unittest.TestCase):
     self.assertEqual(mock_options.output, 'fake-output-name')
     self.assertTrue(mock_options.rrddir_prefix.endswith('/'))
 
-  def testcover_parse_args(self):
+  def testcover_parse_args_WHEN_bad_option_CAUSES_exit(self):
     mlab_export.sys.argv = [
         'mlab_export.py', '--bad-argument', '--causes-error']
+
+    self.assertRaises(SystemExit, mlab_export.parse_args, 0)
+
+  @mock.patch('mlab_export.read_metric_map')
+  def testcover_parse_args_WHEN_bad_time_options_CAUSES_exit(
+      self, mock_read_metric_map):
+    mock_read_metric_map.return_value = {}
+    mlab_export.sys.argv = [
+        'mlab_export.py', '--ts_start', '10', '--ts_end', '9']
 
     self.assertRaises(SystemExit, mlab_export.parse_args, 0)
 
