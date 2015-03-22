@@ -236,7 +236,7 @@ def default_start_time(options, ts_previous):
     # Likely: first, automated export. Start at previous 'length' aligned time.
     start = align_timestamp(ts_current, options.length) - options.length
 
-  # Align end ts to a multiple of step size (just in case).
+  # Align start ts to a multiple of step size (just in case).
   return align_timestamp(start, options.step)
 
 
