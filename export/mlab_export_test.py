@@ -201,7 +201,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mlab_export.METRIC_MAP = {
         'disk-dm-0.disk_time.write': 'disk.swap.io.time.write'}
 
-    (returned_host, returned_experiment, returned_metric) = (
+    returned_host, returned_experiment, returned_metric = (
         mlab_export.get_canonical_names(
             fake_filename, value_name, mock_options))
     
@@ -221,7 +221,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mlab_export.HOSTNAME = 'mlab2.nuq0t'
     mlab_export.METRIC_MAP = {}
 
-    (returned_host, returned_experiment, returned_metric) = (
+    returned_host, returned_experiment, returned_metric = (
         mlab_export.get_canonical_names(
             fake_filename, value_name, mock_options))
     
