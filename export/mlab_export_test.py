@@ -27,7 +27,7 @@ import mlab_export
 # Too many public methods. Hard to avoid for unit tests.
 # pylint: disable=R0904
 
-# Static timestamp for unittests.
+# Static timestamp for unittests: 2014-09-06 10:56:40.
 FAKE_TIMESTAMP = 1410001000
 
 logging.basicConfig(filename='/dev/null')
