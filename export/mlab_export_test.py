@@ -80,15 +80,16 @@ class MlabExport_GlobalTests(unittest.TestCase):
   def testcover_init_global(self):
     mlab_export.init_global()
 
-  def testunit_LockFile_acquire_WHEN_locked_RAISES_IOError(self):
+  def testunit_LockFile_WHEN_locked_twice_RAISES_LockFileError(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
 
-    lock1 = mlab_export.LockFile(fake_tstamp)
-    lock1.acquire()
-    lock2 = mlab_export.LockFile(fake_tstamp)
-
-    self.assertRaises(IOError, lock2.acquire)
-    lock1.release()
+    with mlab_export.LockFile(fake_tstamp):
+      try:
+        with mlab_export.LockFile(fake_tstamp):
+          self.fail('Acquiring lockfile twice should not be possible!')
+      except mlab_export.LockFileError:
+        # A lock file error is expected when locked twice.
+        pass
 
   def testunit_get_mtime_RETURNS_mtime(self):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
@@ -403,15 +404,16 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
     self.assertRaises(SystemExit, mlab_export.parse_args, 0)
 
-  @mock.patch('mlab_export.LockFile.acquire')
-  def testcover_main_exit(self, mock_lock_file_acquire):
+  @mock.patch('mlab_export.LockFile.__enter__')
+  def testcover_main_exit(self, mock_lock_file_enter):
     fake_tstamp = os.path.join(self._testdata_dir, 'fake.tstamp')
     mlab_export.EXPORT_LOCKFILE = fake_tstamp
-    mock_lock_file_acquire.side_effect = IOError('already locked.')
+    mock_lock_file_enter.side_effect = mlab_export.LockFileError(
+        'already locked.')
 
     self.assertRaises(SystemExit, mlab_export.main)
 
-    self.assertTrue(mock_lock_file_acquire.called)
+    self.assertTrue(mock_lock_file_enter.called)
 
   @mock.patch('mlab_export.parse_args')
   @mock.patch('mlab_export.rrd_list')

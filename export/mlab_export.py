@@ -145,6 +145,10 @@ class TimeOptionError(Error):
   """An error related to export times or ranges."""
 
 
+class LockFileError(Error):
+  """An error related to the single process lock file."""
+
+
 def init_global():
   global HOSTNAME
   # NOTE: This should be the hostname of root context, not slice context.
@@ -159,12 +163,15 @@ class LockFile(object):
     self._filename = filename
     self._handle = None
 
-  def acquire(self):
+  def __enter__(self):
     """Acquires file lock on filename. Raises IOError on failure."""
     self._handle = open(self._filename, 'w')
-    fcntl.flock(self._handle, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    try:
+      fcntl.flock(self._handle, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except IOError as err:
+      raise LockFileError(err)
 
-  def release(self):
+  def __exit__(self, *unused_args):
     """Releases file lock on filename."""
     self._handle.close()
 
@@ -579,26 +586,23 @@ def main():
   init_global()
 
   try:
-    lock_file = LockFile(EXPORT_LOCKFILE)
-    lock_file.acquire()
-  except IOError as err:
-    logging.error('Failed to acquire lockfile %s: %s', EXPORT_LOCKFILE, err)
+    with LockFile(EXPORT_LOCKFILE):
+      options = parse_args(get_mtime(LAST_EXPORT_FILENAME))
+      if any_show_options(options):
+        rrd_list(options)
+      else:
+        rrd_export(options)
+        # Update last_export mtime only after everything completes successfully.
+        if options.update:
+          update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
+
+  except (OSError, IOError) as err:
+    logging.error('Export failure: %s', err)
     sys.exit(1)
 
-  try:
-    options = parse_args(get_mtime(LAST_EXPORT_FILENAME))
-    if any_show_options(options):
-      rrd_list(options)
-    else:
-      rrd_export(options)
-      # Update last_export mtime only once everything completes successfully.
-      if options.update:
-        update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
-  except (OSError, IOError) as err:
-    logging.error('Failure: %s', err)
+  except LockFileError as err:
+    logging.error('Failed to acquire lockfile %s: %s', EXPORT_LOCKFILE, err)
     sys.exit(1)
-  finally:
-    lock_file.release()
 
 
 if __name__ == '__main__':  # pragma: no cover.
