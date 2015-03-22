@@ -29,6 +29,7 @@ import mlab_export
 
 # Static timestamp for unittests.
 FAKE_TIMESTAMP = 1410001000
+
 logging.basicConfig(filename='/dev/null')
 
 
@@ -50,6 +51,24 @@ def enable_show_options(options):
   options.show_metric = True
   options.show_skipped = True
   return options
+
+
+class MlabExport_FakeTimestampTests(unittest.TestCase):
+
+  def setUp(self):
+    self._testdata_dir = os.path.join(
+        os.path.dirname(mlab_export.__file__), 'testdata')
+    self.fake_tstamp = os.path.join(self._testdata_dir, 'no_such_file.tstamp')
+
+  def tearDown(self):
+    # Make sure that fake timestamp file is removed.
+    if os.path.exists(self.fake_tstamp):
+      os.remove(self.fake_tstamp)
+
+  def testunit_get_mtime_WHEN_timestamp_file_created_RETURNS_zero(self):
+    returned_tstamp = mlab_export.get_mtime(self.fake_tstamp)
+
+    self.assertEqual(0, returned_tstamp)
 
 
 class MlabExport_GlobalTests(unittest.TestCase):
@@ -78,16 +97,6 @@ class MlabExport_GlobalTests(unittest.TestCase):
     returned_tstamp = mlab_export.get_mtime(fake_tstamp)
 
     self.assertEqual(FAKE_TIMESTAMP, returned_tstamp)
-
-  def testunit_get_mtime_WHEN_timestamp_file_created_RETURNS_zero(self):
-    fake_tstamp = os.path.join(self._testdata_dir, 'no_such_file.tstamp')
-    # Make sure that fake timestamp file actually doesn't exist.
-    if os.path.exists(fake_tstamp):
-      os.remove(fake_tstamp)
-    
-    returned_tstamp = mlab_export.get_mtime(fake_tstamp)
-
-    self.assertEqual(0, returned_tstamp)
 
   @mock.patch('mlab_export.os.utime')
   def testunit_update_mtime(self, mock_utime):
