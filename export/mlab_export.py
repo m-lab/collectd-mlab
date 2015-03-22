@@ -348,13 +348,13 @@ def get_canonical_names(filename, value_name, options):
                      value=value_name)
     logging.info(cmd)
   if options.show_rrdfile:
-    logging.info("rrdfile: %s", filename)
+    logging.info('rrdfile: %s', filename)
   if options.show_rawmetric:
-    logging.info("metric_raw: %s", metric_raw)
+    logging.info('metric_raw: %s', metric_raw)
   if options.show_skipped and not metric:
-    logging.info("metric_skipped: %s", metric_raw)
+    logging.info('metric_skipped: %s', metric_raw)
   if options.show_metric and metric:
-    logging.info("metric: %s", metric)
+    logging.info('metric: %s', metric)
 
   return (HOSTNAME, experiment, metric)
 
