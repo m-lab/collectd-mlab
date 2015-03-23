@@ -94,7 +94,8 @@ flags.DEFINE_integer(
     'ts_start', None,
     'Timestamp to start export, in seconds since the epoch. Only use this '
     'option for debugging. Normally ts_start is calculated automatically from '
-    'the previous export end time.', lower_bound=0)
+    'the previous export end time. If given, ts_start should be a multiple of '
+    'step', lower_bound=0)
 flags.DEFINE_integer(
     'ts_end', None,
     'Timestamp to end export, in seconds since the epoch. Only use this option '
