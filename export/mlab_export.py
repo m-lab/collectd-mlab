@@ -83,7 +83,8 @@ RRD_PREFIX = '/var/lib/collectd/rrd/'
 flags.DEFINE_string(
     'rrddir_prefix', RRD_PREFIX, 'Root directory of RRD files to export.')
 flags.DEFINE_integer(
-    'length', 3600, 'Length of time to export in seconds.', lower_bound=0)
+    'length', 3600, 'Length of time to export in seconds. Length should be '
+    'a multiple of step.', lower_bound=0)
 flags.DEFINE_integer(
     'step', COLLECTD_INTERVAL, 'Time between RRD values in seconds. This value '
     'must equal the value in the collectd config. Inaccurate values will not '
@@ -91,7 +92,9 @@ flags.DEFINE_integer(
     'skipped at the beginning or end of the export window.', lower_bound=1)
 flags.DEFINE_integer(
     'ts_start', None,
-    'Timestamp to start export, in seconds since the epoch.', lower_bound=0)
+    'Timestamp to start export, in seconds since the epoch. Only use this '
+    'option for debugging. Normally ts_start is calculated automatically from '
+    'the previous export end time.', lower_bound=0)
 flags.DEFINE_integer(
     'ts_end', None,
     'Timestamp to end export, in seconds since the epoch. Only use this option '
