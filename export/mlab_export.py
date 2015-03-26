@@ -143,14 +143,17 @@ flags.DEFINE_bool(
 
 class Error(Exception):
   """Base error type for this file."""
+  pass
 
 
 class TimeOptionError(Error):
   """An error related to export times or ranges."""
+  pass
 
 
 class LockFileError(Error):
-  """An error related to the single process lock file."""
+  """An exclusive lock could not be acquired for a lock file."""
+  pass
 
 
 def init_global():
