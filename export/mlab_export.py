@@ -171,10 +171,14 @@ class LockFile(object):
     self._handle = None
 
   def __enter__(self):
-    """Acquires file lock on filename. Raises IOError on failure."""
-    self._handle = open(self._filename, 'w')
+    """Acquires file lock on filename.
+
+    Raises:
+      LockFileError, if the lock cannot be acquired.
+    """
     try:
-      fcntl.flock(self._handle, fcntl.LOCK_EX|fcntl.LOCK_NB)
+      self._handle = open(self._filename, 'w')
+      fcntl.flock(self._handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError as err:
       raise LockFileError(err)
 
