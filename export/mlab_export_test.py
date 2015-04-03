@@ -145,11 +145,9 @@ class MlabExport_GlobalTests(unittest.TestCase):
     mock_options.ts_start = FAKE_TIMESTAMP
 
     try:
-      returned_value = mlab_export.assert_start_and_end_times(mock_options)
+      mlab_export.assert_start_and_end_times(mock_options)
     except mlab_export.TimeOptionError as err:
       self.fail('Unexpected exception: %s' % err)
-
-    self.assertTrue(returned_value)
 
   def testunit_assert_times_WHEN_end_is_before_start_RAISES_TimeOptionError(
       self):
