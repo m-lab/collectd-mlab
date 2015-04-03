@@ -42,6 +42,7 @@ If collectd is not running:
   CRITICAL: collectd unixsock not present:
        /vservers/mlab_utility/var/run/collectd-unixsock.
 """
+
 import os
 import signal
 import socket
