@@ -16,7 +16,7 @@
   check_collectd_mlab.py is a nagios plugin that checks the health of
   collectd-mlab.
 
-  check_collectd_mlab.py should be installed and run form the host context.
+  check_collectd_mlab.py should be installed and run from the host context.
 
 When check_collectd_mlab.py returns an OKAY status, the following are true:
  * collectd is installed in the utility slice.
@@ -81,6 +81,7 @@ STATUS_MESSAGES = {
 
 class Error(Exception):
   """Base error class for this module."""
+  pass
 
 
 class NagiosStateError(Error):
@@ -181,7 +182,6 @@ def assert_collectd_responds():
   Raises:
     CriticalError if an error occurs.
   """
-
   # Is filesystem read-write ok?
   if not os.access(COLLECTD_PID, os.W_OK):
     raise CriticalError('collectd filesystem is NOT_WRITEABLE!')
@@ -269,7 +269,7 @@ def assert_collectd_nagios_levels():
 
   # Is utility slice quota ok?
   exit_code = run_collectd_nagios(
-      'utility.mlab.'+HOSTNAME, 'storage/vs_quota_bytes-quota',
+      'utility.mlab.' + HOSTNAME, 'storage/vs_quota_bytes-quota',
       'used', '0:8000000000', '0:9000000000')
   if exit_code != 0:
     raise NagiosStateError('Storage quota usage is too high',
