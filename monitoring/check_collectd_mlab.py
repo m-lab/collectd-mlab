@@ -73,10 +73,10 @@ STATE_WARNING = 1
 STATE_CRITICAL = 2
 STATE_UNKNOWN = 3
 STATUS_MESSAGES = {
-    STATE_OK: 'OKAY:',
-    STATE_WARNING: 'WARNING:',
-    STATE_CRITICAL: 'CRITICAL:',
-    STATE_UNKNOWN: 'UNKNOWN:'
+    STATE_OK: 'OKAY',
+    STATE_WARNING: 'WARNING',
+    STATE_CRITICAL: 'CRITICAL',
+    STATE_UNKNOWN: 'UNKNOWN'
 }
 
 
@@ -362,7 +362,7 @@ def main():
 
   cancel_alarm()
 
-  print STATUS_MESSAGES.get(status_code, 'UNKNOWN:'), message
+  print '%s: %s' % (STATUS_MESSAGES.get(status_code, 'UNKNOWN'), message)
   sys.exit(status_code)
 
 
