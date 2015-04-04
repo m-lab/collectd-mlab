@@ -87,20 +87,70 @@ class Error(Exception):
 
 class NagiosStateError(Error):
   """A generic nagios status error."""
-  status_code = STATE_UNKNOWN
-  def __init__(self, message, status_code=None):
-    if status_code:
-      self.status_code = status_code
+
+  def __init__(self, message, status_code=STATE_UNKNOWN):
+    self.status_code = status_code
     Error.__init__(self, message)
 
 
-class CriticalError(NagiosStateError):
-  """A critical error has occurred."""
-  status_code = STATE_CRITICAL
+class CriticalError(Error):
+  """A base class for all critical errors."""
+  pass
+
+
+class MissingBinaryCriticalError(CriticalError):
+  """The collectd binary is missing."""
+  pass
+
+
+class MissingSocketCriticalError(CriticalError):
+  """The collectd socket is missing."""
+  pass
+
+
+class ReadonlyFilesystemCriticalError(CriticalError):
+  """Collectd is running on a read-only filesystem."""
+  pass
+
+
+class SocketConnectionCriticalError(CriticalError):
+  """Connecting to the collectd unix socket failed."""
+  pass
+
+
+class SocketSendCommandCriticalError(CriticalError):
+  """Sending a command to collectd over the unix socket failed."""
+  pass
+
+
+class SocketReadlineCriticalError(CriticalError):
+  """Reading the response from collectd over the unix socket failed."""
+  pass
+
+
+class MissingVsysBackendCriticalError(CriticalError):
+  """The vsys backend script is missing."""
+  pass
+
+
+class MissingVsysFrontendCriticalError(CriticalError):
+  """The vsys frontend FIFO is missing inside slice."""
+  pass
+
+
+class MissingVsysAclCriticalError(CriticalError):
+  """The vsys ACL file is missing."""
+  pass
+
+
+class MissingSliceFromVsysAclCriticalError(CriticalError):
+  """The expected slice name was not found in the vsys ACL file."""
+  pass
 
 
 class TimeoutError(Exception):
   """A timeout has occurred."""
+  pass
 
 
 def sock_connect(path):
@@ -169,11 +219,12 @@ def assert_collectd_installed():
   """
   # Is collectd installed?
   if not os.path.exists(COLLECTD_BIN):
-    raise CriticalError('collectd binary not present: %s.' % COLLECTD_BIN)
+    raise MissingBinaryCriticalError(
+        'collectd binary not present: %s.' % COLLECTD_BIN)
 
   # Is collectd socket available?
   if not os.path.exists(COLLECTD_UNIXSOCK):
-    raise CriticalError(
+    raise MissingSocketCriticalError(
         'collectd unixsock not present: %s.' % COLLECTD_UNIXSOCK)
 
 
@@ -185,24 +236,27 @@ def assert_collectd_responds():
   """
   # Is filesystem read-write ok?
   if not os.access(COLLECTD_PID, os.W_OK):
-    raise CriticalError('collectd filesystem is NOT_WRITEABLE!')
+    raise ReadonlyFilesystemCriticalError(
+        'collectd filesystem is read only!')
 
   # Is collectd responsive over unix socket?
   sock = sock_connect(COLLECTD_UNIXSOCK)
   if sock is None:
-    raise CriticalError(
-        'CONNECT_FAILED but unixsock present (%s)!' % COLLECTD_UNIXSOCK)
+    raise SocketConnectionCriticalError(
+        'socket connection failed but unixsock present (%s)!' %
+        COLLECTD_UNIXSOCK)
 
   # Can we request a value over socket?
   val = sock_sendcmd(sock, 'GETVAL "%s/meta/timer-read"' % HOSTNAME)
   if val <= 0:
-    raise CriticalError(
-        'SENDCMD_FAILED but collectd unixsock is open.')
+    raise SocketSendCommandCriticalError(
+        'collectd unixsock is open, but sending GETVAL command failed.')
 
   # Read as many lines as reported back from command.
   for _ in xrange(0, val):
     if not sock_readline(sock):
-      raise CriticalError('EMPTY_MESSAGE read from collectd socket.')
+      raise SocketReadlineCriticalError(
+          'Read an empty message from collectd socket.')
 
 
 def assert_collectd_vsys_setup():
@@ -213,21 +267,24 @@ def assert_collectd_vsys_setup():
   """
   # Is the vsys backend script installed?
   if not os.path.exists(VSYSPATH_BACKEND):
-    raise CriticalError('NO_VSYS_BACKEND %s is missing!' % VSYSPATH_BACKEND)
+    raise MissingVsysBackendCriticalError(
+        'The vsys backend script %s is missing!' % VSYSPATH_BACKEND)
 
   # Is the vsys frontend FIFO in the slice context?
   if not os.path.exists(VSYSPATH_SLICE):
-    raise CriticalError('NO_VSYS_SLICE %s is missing in slice' % VSYSPATH_SLICE)
+    raise MissingVsysFrontendCriticalError(
+        'The vsys frontend fifo %s is missing in slice!' % VSYSPATH_SLICE)
 
   # Is mlab_utility in the vsys acl for the backend script?
   try:
     acl = open(VSYSPATH_ACL, 'r').read().strip()
   except IOError:
-    raise CriticalError('NO_VSYS_ACL cannot read vsys acl: %s' % VSYSPATH_ACL)
+    raise MissingVsysAclCriticalError(
+        'Failed to read the vsys ACL: %s' % VSYSPATH_ACL)
 
   if SLICENAME not in acl:
-    raise CriticalError(
-        'NO_SLICE_IN_ACL %s is missing from ACL %s' % (SLICENAME, VSYSPATH_ACL))
+    raise MissingSliceFromVsysAclCriticalError(
+        'Slice name %s is missing from ACL: %s' % (SLICENAME, VSYSPATH_ACL))
 
 
 def run_collectd_nagios(host, metric, value, warning, critical):
@@ -323,7 +380,7 @@ def check_collectd():
     assert_collectd_vsys_setup()
     assert_disk_last_sync_time()
   except CriticalError as err:
-    return (err.status_code, str(err))
+    return (STATE_CRITICAL, str(err))
 
   # Since the above establishes that collectd is working, now check collectd
   # resource usage thresholds *from* collectd.
