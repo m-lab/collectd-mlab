@@ -159,32 +159,45 @@ def sock_connect(path):
   Args:
     path: str, absolute path to unix socket name.
   Returns:
-    AF_UNIX socket.socket of type SOCK_STREAM on success, None on error.
+    AF_UNIX socket.socket of type SOCK_STREAM.
+  Raises:
+    CriticalError, if socket connection fails.
   """
   try:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.connect(path)
     return sock
-  except socket.error:
-    return None
+  except socket.error as err:
+    raise SocketConnectionCriticalError(
+        'Failed to connect to socket %s! Received socket.error: %s' %
+        (path, err))
 
 
 def sock_sendcmd(sock, command):
-  """Writes command to socket.
+  """Writes command to collectd UnixSock socket.
+
+  For more information, see also the collectd UnixSock socket protocol:
+    https://collectd.org/wiki/index.php/Plain_text_protocol
 
   Args:
     sock: socket.socket, connected unix domain socket.
     command: str, the command to send over socket.
   Returns:
-    int, positive on success, less than or equal to zero on error.
+    int, the status code returned by collectd. The value is positive on
+        success, less than or equal to zero on error.
+  Raises:
+    CriticalError, if socket send fails.
   """
-  sock.send(command + '\n')
-  status_message = sock_readline(sock)
-  if not status_message:
-    return 0
-  code, _ = status_message.split(' ', 1)
   try:
-    return int(code)
+    sock.send(command + '\n')
+  except socket.error as err:
+    raise SocketSendCommandCriticalError(
+        'Sending %s failed: %s' % (command, err))
+
+  status_message = sock_readline(sock)
+  code = status_message.split(' ', 1)
+  try:
+    return int(code[0])
   except ValueError:
     return 0
 
@@ -196,19 +209,19 @@ def sock_readline(sock):
      sock: socket.socket, to read line from this socket.
   Returns:
      str, the line read, or empty string on error.
+  Raises:
+    CriticalError, if socket read fails.
   """
   try:
-    data = ''
     buf = []
-    while data != '\n':
+    data = sock.recv(1)
+    while data and data != '\n':
+      buf.append(data)
       data = sock.recv(1)
-      if not data:
-        break
-      if data != '\n':
-        buf.append(data)
     return ''.join(buf)
-  except socket.error:
-    return ''
+  except socket.error as err:
+    raise SocketReadlineCriticalError(
+        'Failed to read message from collectd. Received error: %s' % err)
 
 
 def assert_collectd_installed():
@@ -241,10 +254,6 @@ def assert_collectd_responds():
 
   # Is collectd responsive over unix socket?
   sock = sock_connect(COLLECTD_UNIXSOCK)
-  if sock is None:
-    raise SocketConnectionCriticalError(
-        'socket connection failed but unixsock present (%s)!' %
-        COLLECTD_UNIXSOCK)
 
   # Can we request a value over socket?
   val = sock_sendcmd(sock, 'GETVAL "%s/meta/timer-read"' % HOSTNAME)

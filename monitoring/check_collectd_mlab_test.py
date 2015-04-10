@@ -163,10 +163,9 @@ class MlabNagiosTests(unittest.TestCase):
     mock_sock = mock.Mock(spec_set=socket.socket)
     mock_sock.recv.side_effect = socket.error('fake error')
 
-    returned_value = check_collectd_mlab.sock_readline(mock_sock)
-
-    self.assertEqual(returned_value, '')
-    self.assertTrue(mock_sock.recv.called)
+    self.assertRaises(
+        check_collectd_mlab.SocketReadlineCriticalError,
+        check_collectd_mlab.sock_readline, mock_sock)
 
   def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_CriticalError(
       self):
