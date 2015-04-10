@@ -309,8 +309,8 @@ def run_collectd_nagios(host, metric, value, warning, critical):
     warning: str, a collectd-nagios warning threshold. (e.g. '0:20')
     critical: str, a collectd-nagios critical threshold. (e.g. '0:30')
   Returns:
-    exit code from collectd-nagios. Because this is a nagios plugin, these are
-        valid nagios exit states.
+    int, exit code from collectd-nagios. Because this is a nagios plugin, these
+        are valid nagios exit states.
   """
   cmd = ('collectd-nagios -s {unixsock} -H {host} '+
          '-n {metric} -d {value} -w {warning} '+
