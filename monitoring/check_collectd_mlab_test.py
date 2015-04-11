@@ -286,7 +286,7 @@ class MlabNagiosTests(unittest.TestCase):
       self, mock_last_sync_time, mock_collectd_nagios_levels, mock_vsys_setup,
       mock_collectd_responds, mock_collectd_installed):
 
-    (state, _) = check_collectd_mlab.check_collectd()
+    state, _ = check_collectd_mlab.check_collectd()
 
     self.assertEqual(state, check_collectd_mlab.STATE_OK)
     self.assertTrue(mock_collectd_installed.called)
@@ -306,7 +306,7 @@ class MlabNagiosTests(unittest.TestCase):
     mock_collectd_nagios_levels.side_effect = (
         check_collectd_mlab.NagiosStateError('error'))
 
-    (state, message) = check_collectd_mlab.check_collectd()
+    state, message = check_collectd_mlab.check_collectd()
 
     self.assertEqual(state, check_collectd_mlab.STATE_UNKNOWN)
     self.assertEqual(message, 'error')
@@ -322,7 +322,7 @@ class MlabNagiosTests(unittest.TestCase):
     mock_collectd_installed.side_effect = (
         check_collectd_mlab.CriticalError('fail'))
 
-    (state, _) = check_collectd_mlab.check_collectd()
+    state, _ = check_collectd_mlab.check_collectd()
 
     self.assertEqual(state, check_collectd_mlab.STATE_CRITICAL)
     self.assertTrue(mock_collectd_installed.called)
