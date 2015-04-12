@@ -55,6 +55,7 @@ What's happening?
 import os
 import signal
 import subprocess
+import sys
 import syslog
 import time
 
@@ -76,17 +77,20 @@ def ignore_signal_handler(signal, frame):
   log('Ignoring signal: %s' % signal)
 
 
-def get_ipv4_address():
-  """Returns the local IPv4 addresses as a string."""
+def get_address():
+  """Returns local IPv4 & IPv6 addresses as a string separated by spaces."""
   ifaces = netifaces.interfaces()
+  addrs = []
   for iface in ifaces:
     if iface == 'lo':
       continue
-    addrs = netifaces.ifaddresses(iface)
-    if netifaces.AF_INET in addrs:
-      addrs = [addr['addr'] for addr in addrs[netifaces.AF_INET]]
-      return ' '.join(addrs)
-  return '127.0.0.1'
+    addresses = netifaces.ifaddresses(iface)
+    for addr_type in (netifaces.AF_INET, netifaces.AF_INET6):
+      if addr_type in addresses:
+        addrs.extend([addr['addr'] for addr in addresses[addr_type]])
+  if not addrs:
+    return '127.0.0.1'
+  return ' '.join(addrs)
 
 
 def get_access_config():
@@ -95,10 +99,10 @@ def get_access_config():
     AddHandler cgi-script .cgi
     DirectoryIndex bin/index.cgi
     Order Deny,Allow
-    Allow from {ipv4}
+    Allow from {ips}
     Deny from all
 </Directory>
-""".format(ipv4=get_ipv4_address())
+""".format(ips=get_address())
 
 
 def find_last_parent(pid):
