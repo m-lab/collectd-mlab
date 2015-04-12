@@ -14,10 +14,11 @@
 # limitations under the License.
 """Unit tests for check_collectd_mlab check."""
 
+import contextlib
 import os
-import time
 import socket
 import threading
+import time
 import unittest2 as unittest
 
 # Third-party modules.
@@ -38,6 +39,7 @@ class FakeCollectd(object):
     self._sock = None
     self._thread = threading.Thread(target=self._serve)
     self._thread.daemon = True
+    self._failure_mode = ''
 
   def start(self):
     """Starts the FakeCollectd service, listening on the unix domain socket."""
@@ -57,46 +59,54 @@ class FakeCollectd(object):
     self._thread.join(5)
     return not self._thread.isAlive()
 
+  def set_response_behavior(self, mode):
+    """Sets the mode for injecting errors into the client response.
+
+    If mode is not one of the following, it has no effect.
+      "send_bad_reply" - the status code is not a number.
+      "send_empty_reply" - the request is received but no reply is sent.
+      "close_after_reply" - the connection is closed after sending the
+         number of results but before sending the remaining values.
+
+    Args:
+      mode: str, the fake server failure mode.
+    """
+    self._failure_mode = mode
+
   def _serve(self):
     """Runs a fake server that can respond to a single request.
 
     This fake service emulates GETVAL with the option to inject errors.
       https://collectd.org/wiki/index.php/Plain_text_protocol#GETVAL
-
-    The response is corrupted if the request contains one of these keywords.
-      send_bad_reply -- the number of values is bad.
-      send_empty_reply -- the request is received but no reply is sent.
-      close_after_reply -- the connection is closed after sending the number of
-          results to client.
     """
     # E1101: attribute access for nonexisting member. pylint 0.21.1 rejects
     # the calls to sendall. Disable this check because the method is present.
     # pylint: disable=E1101
-    # Wait for a connection
-    client, _ = self._sock.accept()
-    request = check_collectd_mlab.sock_readline(client)
+    # Wait for a connection.
+    with contextlib.closing(self._sock):
+      client, _ = self._sock.accept()
+      with contextlib.closing(client):
+        # We only test with the GETVAL command, so request is ignored.
+        _ = check_collectd_mlab.sock_readline(client)
 
-    # Send "number of values" response.
-    if 'send_bad_reply' in request:
-      client.sendall('not-a-number junk\n')
-    elif 'send_empty_reply' in request:
-      client.sendall('\n')
-    else:
-      client.sendall('1 junk\n')
+        # Send "number of values" response.
+        if self._failure_mode == 'send_bad_reply':
+          client.sendall('not-a-number junk\n')
+        elif self._failure_mode == 'send_empty_reply':
+          client.sendall('\n')
+        else:
+          client.sendall('1 default reply\n')
 
-    # Send "actual values" response.
-    if 'close_after_reply' in request:
-      # Skip the response, so client read will fail.
-      client.close()
-      return
-    try:
-      client.sendall('default=1.0\n')
-    except socket.error:
-      # Incase of sigpipe due to client closing connection first.
-      pass
+        # Send "actual values" response.
+        if self._failure_mode == 'close_after_reply':
+          # Skip the response, so client read will fail.
+          return
+        try:
+          client.sendall('default=1.0\n')
+        except socket.error:
+          # Incase of sigpipe due to client closing connection first.
+          pass
     # pylint: enable=E1101
-    client.close()
-    self._sock.close()
 
 
 class MlabNagiosCollectdTests(unittest.TestCase):
@@ -111,8 +121,7 @@ class MlabNagiosCollectdTests(unittest.TestCase):
   def tearDown(self):
     self.assertTrue(self.fake_collectd.shutdown())
 
-  def testunit_sock_sendcmd(self):
-    check_collectd_mlab.HOSTNAME = 'my.hostname'
+  def testunit_sock_sendcmd_RETURNS_successfully(self):
     sock = check_collectd_mlab.sock_connect(self.fake_socket)
 
     returned_value = check_collectd_mlab.sock_sendcmd(sock, 'GETVAL "whatever"')
@@ -120,28 +129,28 @@ class MlabNagiosCollectdTests(unittest.TestCase):
     self.assertEqual(returned_value, 1)
 
   def testunit_sock_sendcmd_WHEN_receive_bad_reply_RETURNS_zero(self):
-    check_collectd_mlab.HOSTNAME = 'my.hostname'
+    self.fake_collectd.set_response_behavior('send_bad_reply')
     sock = check_collectd_mlab.sock_connect(self.fake_socket)
 
-    returned_value = check_collectd_mlab.sock_sendcmd(sock, 'send_bad_reply')
+    returned_value = check_collectd_mlab.sock_sendcmd(sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 0)
 
   def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(self):
+    self.fake_collectd.set_response_behavior('send_empty_reply')
     check_collectd_mlab.COLLECTD_PID = (
         os.path.join(self._testdata_dir, 'fake_pid'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = self.fake_socket
-    check_collectd_mlab.HOSTNAME = 'send_empty_reply'
 
     self.assertRaises(
         check_collectd_mlab.SocketSendCommandCriticalError,
         check_collectd_mlab.assert_collectd_responds)
 
   def testunit_assert_collectd_responds_WHEN_sock_readline_fails(self):
+    self.fake_collectd.set_response_behavior('close_after_reply')
     check_collectd_mlab.COLLECTD_PID = (
         os.path.join(self._testdata_dir, 'fake_pid'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = self.fake_socket
-    check_collectd_mlab.HOSTNAME = 'close_after_reply'
 
     self.assertRaises(
         check_collectd_mlab.SocketReadlineCriticalError,
