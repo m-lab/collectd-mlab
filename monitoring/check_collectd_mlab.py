@@ -160,6 +160,17 @@ class TimeoutError(Exception):
   pass
 
 
+def _mb_to_bytes(size_mb):
+  """Converts size_mb to a collectd-nagios range in bytes.
+
+  Args:
+    size_mb: int, a size in megabytes (not mebibytes).
+  Returns:
+    str, a nagios range, e.g. 0:1000000
+  """
+  return '0:%s' % (size_mb * 1000 * 1000)
+
+
 def sock_connect(path):
   """Creates a unix domain, stream socket and connects to path.
 
@@ -351,7 +362,7 @@ def assert_collectd_nagios_levels():
   # Is utility slice quota ok?
   exit_code = run_collectd_nagios(
       'utility.mlab.' + HOSTNAME, 'storage/vs_quota_bytes-quota',
-      'used', '0:8000000000', '0:9000000000')
+      'used', _mb_to_bytes(8000), _mb_to_bytes(9000))
   if exit_code != 0:
     raise NagiosStateError('Storage quota usage is too high',
                            status_code=exit_code)
@@ -367,7 +378,7 @@ def assert_collectd_nagios_levels():
   # Actual memory usage should be pretty small, though vm size may be larger.
   exit_code = run_collectd_nagios(
       HOSTNAME, 'meta-collectd/process_memory-rss',
-      'value', '0:10000000', '0:15000000')
+      'value', _mb_to_bytes(10), _mb_to_bytes(15))
   if exit_code != 0:
     raise NagiosStateError('Collectd RSS memory usage is too high',
                            status_code=exit_code)
