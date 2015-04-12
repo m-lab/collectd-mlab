@@ -58,8 +58,10 @@ import time
 # * collectd uses default unixsock name.
 SLICENAME = 'mlab_utility'
 COLLECTD_BIN = '/vservers/%s/usr/sbin/collectd' % SLICENAME
+COLLECTD_NAGIOS = '/vservers/%s/usr/bin/collectd-nagios' % SLICENAME
 COLLECTD_PID = '/vservers/%s/var/run/collectd.pid' % SLICENAME
 COLLECTD_UNIXSOCK = '/vservers/%s/var/run/collectd-unixsock' % SLICENAME
+LD_LIBRARY_PATH = '/vservers/%s/usr/lib' % SLICENAME
 
 HOSTNAME = socket.gethostname()
 VSYSPATH_ACL = '/vsys/vs_resource_backend.acl'
@@ -100,6 +102,11 @@ class CriticalError(Error):
 
 class MissingBinaryCriticalError(CriticalError):
   """The collectd binary is missing."""
+  pass
+
+
+class MissingNagiosBinaryCriticalError(CriticalError):
+  """The collectd-nagios binary is missing."""
   pass
 
 
@@ -235,6 +242,11 @@ def assert_collectd_installed():
     raise MissingBinaryCriticalError(
         'collectd binary not present: %s.' % COLLECTD_BIN)
 
+  # Is collectd-nagios plugin installed?
+  if not os.path.exists(COLLECTD_NAGIOS):
+    raise MissingNagiosBinaryCriticalError(
+        'collectd-nagios binary not present: %s.' % COLLECTD_NAGIOS)
+
   # Is collectd socket available?
   if not os.path.exists(COLLECTD_UNIXSOCK):
     raise MissingSocketCriticalError(
@@ -312,14 +324,16 @@ def run_collectd_nagios(host, metric, value, warning, critical):
     int, exit code from collectd-nagios. Because this is a nagios plugin, these
         are valid nagios exit states.
   """
-  cmd = ('collectd-nagios -s {unixsock} -H {host} '+
-         '-n {metric} -d {value} -w {warning} '+
-         '-c {critical}')
-  cmd = cmd.format(unixsock=COLLECTD_UNIXSOCK, host=host,
-                   metric=metric, value=value, warning=warning,
-                   critical=critical)
+  env = os.environ.copy()
+  env['LD_LIBRARY_PATH'] = '%s:%s' % (
+      LD_LIBRARY_PATH, env.get('LD_LIBRARY_PATH', ''))
+  cmd = ('{collectd_nagios} -s {unixsock} -H {host} -n {metric} -d {value} '
+         '-w {warning} -c {critical}')
+  cmd = cmd.format(
+      collectd_nagios=COLLECTD_NAGIOS, unixsock=COLLECTD_UNIXSOCK, host=host,
+      metric=metric, value=value, warning=warning, critical=critical)
   child = subprocess.Popen(
-      cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
   return child.wait()
 
 

@@ -175,9 +175,22 @@ class MlabNagiosTests(unittest.TestCase):
         check_collectd_mlab.MissingBinaryCriticalError,
         check_collectd_mlab.assert_collectd_installed)
 
+  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_CriticalError(
+      self):
+    check_collectd_mlab.COLLECTD_BIN = (
+        os.path.join(self._testdata_dir, 'fake_bin'))
+    check_collectd_mlab.COLLECTD_NAGIOS = (
+        os.path.join(self._testdata_dir, 'does_not_exist'))
+
+    self.assertRaises(
+        check_collectd_mlab.MissingNagiosBinaryCriticalError,
+        check_collectd_mlab.assert_collectd_installed)
+
   def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_CriticalError(
       self):
     check_collectd_mlab.COLLECTD_BIN = (
+        os.path.join(self._testdata_dir, 'fake_bin'))
+    check_collectd_mlab.COLLECTD_NAGIOS = (
         os.path.join(self._testdata_dir, 'fake_bin'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
