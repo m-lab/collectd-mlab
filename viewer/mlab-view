@@ -64,7 +64,10 @@ import netifaces
 
 
 ACCESS_CONF = '/usr/share/collectd-mlab/access.conf'
+HTTPD_BIN = '/usr/sbin/httpd'
+HTTPD_CONFIG = '/usr/share/collectd-mlab/httpd.conf'
 HTTPD_PID = '/etc/httpd/run/httpd.pid'
+
 
 def log(msg):
   """Sends log message to syslog."""
@@ -79,9 +82,8 @@ def ignore_signal_handler(signal, frame):
 
 def get_address():
   """Returns local IPv4 & IPv6 addresses as a string separated by spaces."""
-  ifaces = netifaces.interfaces()
   addrs = []
-  for iface in ifaces:
+  for iface in netifaces.interfaces():
     if iface == 'lo':
       continue
     addresses = netifaces.ifaddresses(iface)
@@ -99,8 +101,8 @@ def get_access_config():
     AddHandler cgi-script .cgi
     DirectoryIndex bin/index.cgi
     Order Deny,Allow
-    Allow from {ips}
     Deny from all
+    Allow from {ips}
 </Directory>
 """.format(ips=get_address())
 
@@ -112,17 +114,17 @@ def find_last_parent(pid):
   except IOError:
     return -1
 
+  name_lines = filter(lambda x: x.startswith('Name:'), status_lines)
+  if not name_lines:
+    return -1
+
+  ppid_lines = filter(lambda x: x.startswith('PPid:'), status_lines)
+  if not ppid_lines:
+    return -1
+
   # If the process name contains 'sshd', we'll stop there.
-  name_line = filter(lambda x: x.startswith('Name:'), status_lines)
-  if not name_line:
-    return -1
-
-  ppid_line = filter(lambda x: x.startswith('PPid:'), status_lines)
-  if not ppid_line:
-    return -1
-
-  ppid = int(ppid_line[0].split()[1])
-  if 'sshd' in name_line[0] or ppid == 1:
+  ppid = int(ppid_lines[0].split()[1])
+  if 'sshd' in name_lines[0] or ppid == 1:
     return ppid
 
   # Continue up the tree.
@@ -145,7 +147,7 @@ def main():
     sys.exit(1)
 
   # TODO: what other options are available for serving the cgi files?
-  args = ['/usr/sbin/httpd', '-X', '-f', '/usr/share/collectd-mlab/httpd.conf']
+  args = [HTTPD_BIN, '-X', '-f', HTTPD_CONFIG]
   try:
     child = subprocess.Popen(args)
   except OSError as err:
