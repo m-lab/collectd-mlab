@@ -75,7 +75,7 @@ def log(msg):
   syslog.syslog(syslog.LOG_ERR, 'mlab-view: %s' % msg)
 
 
-def ignore_signal_handler(signal, frame):
+def ignore_signal_handler(signal, _):
   """Handler to ignore any signal."""
   log('Ignoring signal: %s' % signal)
 
