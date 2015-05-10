@@ -107,28 +107,76 @@ def get_access_config():
 """.format(ips=get_address())
 
 
-def find_last_parent(pid):
-  """Walks up process tree starting at pid, stopping at sshd or ppid == 1."""
+def is_running(pid):
+  """Checks whether the given pid is running or not."""
+  try:
+    os.kill(pid, 0)
+    return True
+  except OSError:
+    return False
+
+
+def ssh_connection_has_closed(pid):
+  """Determines whether the ssh session that started pid is still open.
+
+  Callers should check that pid is actually running.
+
+  Args:
+    pid: int, a leaf pid in the process tree started via ssh.
+  Returns:
+    bool, True if the connection has closed, False otherwise.
+  """
+  # From the host context, ps can see the entire process tree. The process tree
+  # runs from sshd in the host context to httpd running in the mlab_utility
+  # slice. For example:
+  #
+  # CONTEXT       PPID   PID COMMAND
+  # MAIN             1  1118 /usr/sbin/sshd
+  # MAIN          1118 10594 sshd: mlab_utility [priv]
+  # MAIN         10594 10606 sshd: mlab_utility@notty
+  # MAIN         10606 10607 /bin/su - mlab_utility -c sudo mlab-view
+  # mlab_utility 10607 10668 sudo mlab-view
+  # mlab_utility 10668 10689 /usr/bin/python /usr/bin/mlab-view
+  # mlab_utility 10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
+  #
+  # From within the mlab_utility slice, ps can only see processes in the slice.
+  #
+  #               PPID   PID COMMAND
+  #              10606 10607 /bin/su - mlab_utility -c sudo mlab-view
+  #              10607 10668 sudo mlab-view
+  #              10668 10689 /usr/bin/python /usr/bin/mlab-view
+  #              10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
+  #
+  # The ppid for /bin/su references an sshd process in the host context, until
+  # the client connection closes. Once the ssh connection closes, the sshd
+  # process exits and the /bin/su parent pid changes to 1.
+  #
+  #               PPID   PID COMMAND
+  #                  1 10607 /bin/su - mlab_utility -c sudo mlab-view
+  #
+  # That change signals that mlab-view should shutdown httpd and exit.
   try:
     status_lines = open('/proc/%s/status' % pid, 'r').readlines()
   except IOError:
-    return -1
+    return False
 
   name_lines = filter(lambda x: x.startswith('Name:'), status_lines)
   if not name_lines:
-    return -1
+    return False
 
   ppid_lines = filter(lambda x: x.startswith('PPid:'), status_lines)
   if not ppid_lines:
-    return -1
+    return False
 
-  # If the process name contains 'sshd', we'll stop there.
+  # To allow running mlab-view from root context, also stop searching when the
+  # process name contains 'sshd'.
   ppid = int(ppid_lines[0].split()[1])
   if 'sshd' in name_lines[0] or ppid == 1:
-    return ppid
+    # If the parent pid is 1, then the connection has closed.
+    return ppid == 1
 
-  # Continue up the tree.
-  return find_last_parent(ppid)
+  # Continue up the process tree.
+  return ssh_connection_has_closed(ppid)
 
 
 def main():
@@ -157,12 +205,12 @@ def main():
   log('Started web server pid:%s' % child.pid)
   pid = os.getpid()
   while True:
-    ppid = find_last_parent(pid)
-    if ppid == 1:
-      # When started via ssh, there is a chain of processes from sshd to the
-      # web server. When the ssh session ends, the first child's parent is set
-      # to pid 1. Once this occurs, no one is interacting with server.  So,
-      # kill the server.
+    if not is_running(pid):
+      break
+
+    if ssh_connection_has_closed(pid):
+      # When the ssh session ends, no one is interacting with server, so
+      # shutdown the server.
       break
     time.sleep(1)
 
