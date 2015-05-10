@@ -180,7 +180,7 @@ def ssh_connection_has_closed(pid):
 
 
 def main():
-  signal.signal(signal.SIGINT, ignore_signal_handler)
+  # Ignore signals forwarded by pseudo-ttys allocated by ssh.
   signal.signal(signal.SIGTERM, ignore_signal_handler)
 
   try:
