@@ -14,10 +14,8 @@
 # limitations under the License.
 """Unit tests for check_collectd_mlab check."""
 
-import contextlib
 import os
 import socket
-import threading
 import time
 import unittest2 as unittest
 
@@ -31,137 +29,31 @@ import check_collectd_mlab
 # pylint: disable=R0904
 
 
-class FakeCollectd(object):
-  """A fake version of collectd that listens to a unix domain socket."""
-
-  def __init__(self, unixsock):
-    self._unixsock = unixsock
-    self._sock = None
-    self._thread = threading.Thread(target=self._serve)
-    self._thread.daemon = True
-    self._failure_mode = ''
-
-  def start(self):
-    """Starts the FakeCollectd service, listening on the unix domain socket."""
-    if os.path.exists(self._unixsock):
-      os.unlink(self._unixsock)
-    self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    self._sock.bind(self._unixsock)
-    self._sock.listen(1)
-    self._thread.start()
-
-  def shutdown(self):
-    """Waits up to 5 seconds for the FakeCollectd thread to shutdown.
-
-    Returns:
-      bool, True if shutdown succeeds, False if shutdown fails.
-    """
-    self._thread.join(5)
-    return not self._thread.isAlive()
-
-  def set_response_behavior(self, mode):
-    """Sets the mode for injecting errors into the client response.
-
-    If mode is not one of the following, it has no effect.
-      "send_bad_reply" - the status code is not a number.
-      "send_empty_reply" - the request is received but no reply is sent.
-      "close_after_reply" - the connection is closed after sending the
-         number of results but before sending the remaining values.
-
-    Args:
-      mode: str, the fake server failure mode.
-    """
-    self._failure_mode = mode
-
-  def _serve(self):
-    """Runs a fake server that can respond to a single request.
-
-    This fake service emulates GETVAL with the option to inject errors.
-      https://collectd.org/wiki/index.php/Plain_text_protocol#GETVAL
-    """
-    # E1101: attribute access for nonexisting member. pylint 0.21.1 rejects
-    # the calls to sendall. Disable this check because the method is present.
-    # pylint: disable=E1101
-    # Wait for a connection.
-    with contextlib.closing(self._sock):
-      client, _ = self._sock.accept()
-      with contextlib.closing(client):
-        # We only test with the GETVAL command, so request is ignored.
-        _ = check_collectd_mlab.sock_readline(client)
-
-        # Send "number of values" response.
-        if self._failure_mode == 'send_bad_reply':
-          client.sendall('not-a-number junk\n')
-        elif self._failure_mode == 'send_empty_reply':
-          client.sendall('\n')
-        else:
-          client.sendall('1 default reply\n')
-
-        # Send "actual values" response.
-        if self._failure_mode == 'close_after_reply':
-          # Skip the response, so client read will fail.
-          return
-        try:
-          client.sendall('default=1.0\n')
-        except socket.error:
-          # Incase of sigpipe due to client closing connection first.
-          pass
-    # pylint: enable=E1101
-
-
-class MlabNagiosCollectdTests(unittest.TestCase):
+class MLabNagiosSocketTests(unittest.TestCase):
 
   def setUp(self):
     self._testdata_dir = os.path.join(
         os.path.dirname(check_collectd_mlab.__file__), 'testdata')
-    self.fake_socket = os.path.join(self._testdata_dir, 'fake_socket')
-    self.fake_collectd = FakeCollectd(self.fake_socket)
-    self.fake_collectd.start()
-
-  def tearDown(self):
-    self.assertTrue(self.fake_collectd.shutdown())
 
   def testunit_sock_sendcmd_RETURNS_successfully(self):
-    sock = check_collectd_mlab.sock_connect(self.fake_socket)
+    mock_sock = mock.Mock(spec_set=socket.socket)
+    mock_sock.recv.side_effect = list('1 default reply\n')
 
-    returned_value = check_collectd_mlab.sock_sendcmd(sock, 'GETVAL "whatever"')
+    returned_value = check_collectd_mlab.sock_sendcmd(
+        mock_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 1)
+    mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
   def testunit_sock_sendcmd_WHEN_receive_bad_reply_RETURNS_zero(self):
-    self.fake_collectd.set_response_behavior('send_bad_reply')
-    sock = check_collectd_mlab.sock_connect(self.fake_socket)
+    mock_sock = mock.Mock(spec_set=socket.socket)
+    mock_sock.recv.side_effect = list('not-a-number junk\n')
 
-    returned_value = check_collectd_mlab.sock_sendcmd(sock, 'GETVAL "whatever"')
+    returned_value = check_collectd_mlab.sock_sendcmd(
+        mock_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 0)
-
-  def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(self):
-    self.fake_collectd.set_response_behavior('send_empty_reply')
-    check_collectd_mlab.COLLECTD_PID = (
-        os.path.join(self._testdata_dir, 'fake_pid'))
-    check_collectd_mlab.COLLECTD_UNIXSOCK = self.fake_socket
-
-    self.assertRaises(
-        check_collectd_mlab.SocketSendCommandCriticalError,
-        check_collectd_mlab.assert_collectd_responds)
-
-  def testunit_assert_collectd_responds_WHEN_sock_readline_fails(self):
-    self.fake_collectd.set_response_behavior('close_after_reply')
-    check_collectd_mlab.COLLECTD_PID = (
-        os.path.join(self._testdata_dir, 'fake_pid'))
-    check_collectd_mlab.COLLECTD_UNIXSOCK = self.fake_socket
-
-    self.assertRaises(
-        check_collectd_mlab.SocketReadlineCriticalError,
-        check_collectd_mlab.assert_collectd_responds)
-
-
-class MlabNagiosTests(unittest.TestCase):
-
-  def setUp(self):
-    self._testdata_dir = os.path.join(
-        os.path.dirname(check_collectd_mlab.__file__), 'testdata')
+    mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
   def testunit_sock_connect_WHEN_no_socket_RAISES_CriticalError(self):
     self.assertRaises(
@@ -176,36 +68,51 @@ class MlabNagiosTests(unittest.TestCase):
         check_collectd_mlab.SocketReadlineCriticalError,
         check_collectd_mlab.sock_readline, mock_sock)
 
-  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_CriticalError(
-      self):
-    check_collectd_mlab.COLLECTD_BIN = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingBinaryCriticalError,
-        check_collectd_mlab.assert_collectd_installed)
+class MLabCollectdAssertionTests(unittest.TestCase):
 
-  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_CriticalError(
-      self):
-    check_collectd_mlab.COLLECTD_BIN = (
-        os.path.join(self._testdata_dir, 'fake_bin'))
-    check_collectd_mlab.COLLECTD_NAGIOS = (
-        os.path.join(self._testdata_dir, 'does_not_exist'))
-
-    self.assertRaises(
-        check_collectd_mlab.MissingNagiosBinaryCriticalError,
-        check_collectd_mlab.assert_collectd_installed)
-
-  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_CriticalError(
-      self):
+  def setUp(self):
+    self._testdata_dir = os.path.join(
+        os.path.dirname(check_collectd_mlab.__file__), 'testdata')
     check_collectd_mlab.COLLECTD_BIN = (
         os.path.join(self._testdata_dir, 'fake_bin'))
     check_collectd_mlab.COLLECTD_NAGIOS = (
         os.path.join(self._testdata_dir, 'fake_bin'))
-    check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
+    check_collectd_mlab.COLLECTD_PID = (
+        os.path.join(self._testdata_dir, 'fake_pid'))
+    check_collectd_mlab.COLLECTD_UNIXSOCK = (
+        os.path.join(self._testdata_dir, 'fake_socket'))
+    check_collectd_mlab.VSYSPATH_BACKEND = (
+        os.path.join(self._testdata_dir, 'fake_backend'))
+    check_collectd_mlab.VSYSPATH_SLICE = (
+        os.path.join(self._testdata_dir, 'fake_slice'))
+
+  @mock.patch('check_collectd_mlab.sock_connect')
+  def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(
+      self, mock_sock_connect):
+    mock_sock = mock.Mock(spec_set=socket.socket)
+    mock_sock.send.side_effect = socket.error('fake socket error')
+    mock_sock_connect.return_value = mock_sock
 
     self.assertRaises(
-        check_collectd_mlab.MissingSocketCriticalError,
-        check_collectd_mlab.assert_collectd_installed)
+        check_collectd_mlab.SocketSendCommandCriticalError,
+        check_collectd_mlab.assert_collectd_responds)
+    mock_sock_connect.assert_called_with(
+        check_collectd_mlab.COLLECTD_UNIXSOCK)
+
+  @mock.patch('check_collectd_mlab.sock_connect')
+  def testunit_assert_collectd_responds_WHEN_sock_readline_fails(
+      self, mock_sock_connect):
+    mock_sock = mock.Mock(spec_set=socket.socket)
+    # After sending a default reply, send EOF ('') prematurely.
+    mock_sock.recv.side_effect = list('1 default reply\n') + ['']
+    mock_sock_connect.return_value = mock_sock
+
+    self.assertRaises(
+        check_collectd_mlab.SocketReadlineCriticalError,
+        check_collectd_mlab.assert_collectd_responds)
+    mock_sock_connect.assert_called_with(
+        check_collectd_mlab.COLLECTD_UNIXSOCK)
 
   @mock.patch('os.access')
   def testunit_assert_collectd_responds_WHEN_filesystem_is_readonly(
@@ -219,13 +126,36 @@ class MlabNagiosTests(unittest.TestCase):
     self.assertTrue(mock_access.called)
 
   def testunit_assert_collectd_responds_WHEN_sock_connect_fails(self):
-    check_collectd_mlab.COLLECTD_PID = (
-        os.path.join(self._testdata_dir, 'fake_pid'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
     self.assertRaises(
         check_collectd_mlab.SocketConnectionCriticalError,
         check_collectd_mlab.assert_collectd_responds)
+
+  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_CriticalError(
+      self):
+    check_collectd_mlab.COLLECTD_BIN = 'does_not_exist'
+
+    self.assertRaises(
+        check_collectd_mlab.MissingBinaryCriticalError,
+        check_collectd_mlab.assert_collectd_installed)
+
+  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_CriticalError(
+      self):
+    check_collectd_mlab.COLLECTD_NAGIOS = (
+        os.path.join(self._testdata_dir, 'does_not_exist'))
+
+    self.assertRaises(
+        check_collectd_mlab.MissingNagiosBinaryCriticalError,
+        check_collectd_mlab.assert_collectd_installed)
+
+  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_CriticalError(
+      self):
+    check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
+
+    self.assertRaises(
+        check_collectd_mlab.MissingSocketCriticalError,
+        check_collectd_mlab.assert_collectd_installed)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_backend_is_missing(self):
     check_collectd_mlab.VSYSPATH_BACKEND = 'does_not_exist'
@@ -235,8 +165,6 @@ class MlabNagiosTests(unittest.TestCase):
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_slice_is_missing(self):
-    check_collectd_mlab.VSYSPATH_BACKEND = os.path.join(
-        self._testdata_dir, 'fake_backend')
     check_collectd_mlab.VSYSPATH_SLICE = 'does_not_exist'
 
     self.assertRaises(
@@ -244,10 +172,6 @@ class MlabNagiosTests(unittest.TestCase):
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_acl_is_missing(self):
-    check_collectd_mlab.VSYSPATH_BACKEND = os.path.join(
-        self._testdata_dir, 'fake_backend')
-    check_collectd_mlab.VSYSPATH_SLICE = os.path.join(
-        self._testdata_dir, 'fake_slice')
     check_collectd_mlab.VSYSPATH_ACL = 'does_not_exist'
 
     self.assertRaises(
@@ -255,26 +179,19 @@ class MlabNagiosTests(unittest.TestCase):
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_acl_incomplete(self):
-    check_collectd_mlab.VSYSPATH_BACKEND = os.path.join(
-        self._testdata_dir, 'fake_backend')
-    check_collectd_mlab.VSYSPATH_SLICE = os.path.join(
-        self._testdata_dir, 'fake_slice')
     check_collectd_mlab.VSYSPATH_ACL = os.path.join(
-        self._testdata_dir, 'fake_acl')
+        self._testdata_dir, 'acl_missing_mlab_utility_slicename')
 
     self.assertRaises(
         check_collectd_mlab.MissingSliceFromVsysAclCriticalError,
         check_collectd_mlab.assert_collectd_vsys_setup)
 
-  @mock.patch('subprocess.Popen')
-  def testcover_run_collectd_nagios(self, mock_popen):
-    mock_popen.return_value.wait.return_value = 2
 
-    returned_value = check_collectd_mlab.run_collectd_nagios(
-        'host', 'metric', 'value', 'warning', 'critical')
+class MLabNagiosTests(unittest.TestCase):
 
-    self.assertEqual(returned_value, 2)
-    self.assertTrue(mock_popen.called)
+  def setUp(self):
+    self._testdata_dir = os.path.join(
+        os.path.dirname(check_collectd_mlab.__file__), 'testdata')
 
   @mock.patch('check_collectd_mlab.run_collectd_nagios')
   def testcover_assert_collectd_nagios_levels(self, mock_run_collectd_nagios):
@@ -296,8 +213,15 @@ class MlabNagiosTests(unittest.TestCase):
     self.assertRaises(check_collectd_mlab.NagiosStateError,
                       check_collectd_mlab.assert_collectd_nagios_levels)
 
-  def teststub_assert_disk_last_sync_time(self):
-    check_collectd_mlab.assert_disk_last_sync_time()
+  @mock.patch('subprocess.Popen')
+  def testcover_run_collectd_nagios(self, mock_popen):
+    mock_popen.return_value.wait.return_value = 2
+
+    returned_value = check_collectd_mlab.run_collectd_nagios(
+        'host', 'metric', 'value', 'warning', 'critical')
+
+    self.assertEqual(returned_value, 2)
+    self.assertTrue(mock_popen.called)
 
   @mock.patch('check_collectd_mlab.assert_collectd_installed')
   @mock.patch('check_collectd_mlab.assert_collectd_responds')
