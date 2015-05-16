@@ -60,7 +60,7 @@ class MLabNagiosSocketTests(unittest.TestCase):
         check_collectd_mlab.SocketConnectionError,
         check_collectd_mlab.sock_connect, 'no_socket_name')
 
-  def testunit_sock_readline_WHEN_socket_error_RETURNS_empty_string(self):
+  def testunit_sock_readline_WHEN_socket_error_RAISES_Error(self):
     mock_sock = mock.Mock(spec_set=socket.socket)
     mock_sock.recv.side_effect = socket.error('fake error')
 
