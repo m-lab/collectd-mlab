@@ -231,7 +231,6 @@ class MLabNagiosTests(unittest.TestCase):
   def testcover_check_collectd(
       self, mock_last_sync_time, mock_collectd_nagios_levels, mock_vsys_setup,
       mock_collectd_responds, mock_collectd_installed):
-
     state, _ = check_collectd_mlab.check_collectd()
 
     self.assertEqual(state, check_collectd_mlab.STATE_OK)
