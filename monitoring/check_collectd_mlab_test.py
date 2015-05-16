@@ -55,9 +55,9 @@ class MLabNagiosSocketTests(unittest.TestCase):
     self.assertEqual(returned_value, 0)
     mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
-  def testunit_sock_connect_WHEN_no_socket_RAISES_CriticalError(self):
+  def testunit_sock_connect_WHEN_no_socket_RAISES_Error(self):
     self.assertRaises(
-        check_collectd_mlab.SocketConnectionCriticalError,
+        check_collectd_mlab.SocketConnectionError,
         check_collectd_mlab.sock_connect, 'no_socket_name')
 
   def testunit_sock_readline_WHEN_socket_error_RETURNS_empty_string(self):
@@ -65,7 +65,7 @@ class MLabNagiosSocketTests(unittest.TestCase):
     mock_sock.recv.side_effect = socket.error('fake error')
 
     self.assertRaises(
-        check_collectd_mlab.SocketReadlineCriticalError,
+        check_collectd_mlab.SocketReadlineError,
         check_collectd_mlab.sock_readline, mock_sock)
 
 
@@ -95,7 +95,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     mock_sock_connect.return_value = mock_sock
 
     self.assertRaises(
-        check_collectd_mlab.SocketSendCommandCriticalError,
+        check_collectd_mlab.SocketSendCommandError,
         check_collectd_mlab.assert_collectd_responds)
     mock_sock_connect.assert_called_with(
         check_collectd_mlab.COLLECTD_UNIXSOCK)
@@ -109,7 +109,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     mock_sock_connect.return_value = mock_sock
 
     self.assertRaises(
-        check_collectd_mlab.SocketReadlineCriticalError,
+        check_collectd_mlab.SocketReadlineError,
         check_collectd_mlab.assert_collectd_responds)
     mock_sock_connect.assert_called_with(
         check_collectd_mlab.COLLECTD_UNIXSOCK)
@@ -121,7 +121,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     mock_access.return_value = False
 
     self.assertRaises(
-        check_collectd_mlab.ReadonlyFilesystemCriticalError,
+        check_collectd_mlab.ReadonlyFilesystemError,
         check_collectd_mlab.assert_collectd_responds)
     self.assertTrue(mock_access.called)
 
@@ -129,53 +129,53 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.SocketConnectionCriticalError,
+        check_collectd_mlab.SocketConnectionError,
         check_collectd_mlab.assert_collectd_responds)
 
-  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_CriticalError(
+  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_Error(
       self):
     check_collectd_mlab.COLLECTD_BIN = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.MissingBinaryCriticalError,
+        check_collectd_mlab.MissingBinaryError,
         check_collectd_mlab.assert_collectd_installed)
 
-  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_CriticalError(
+  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_Error(
       self):
     check_collectd_mlab.COLLECTD_NAGIOS = (
         os.path.join(self._testdata_dir, 'does_not_exist'))
 
     self.assertRaises(
-        check_collectd_mlab.MissingNagiosBinaryCriticalError,
+        check_collectd_mlab.MissingNagiosBinaryError,
         check_collectd_mlab.assert_collectd_installed)
 
-  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_CriticalError(
+  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_Error(
       self):
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.MissingSocketCriticalError,
+        check_collectd_mlab.MissingSocketError,
         check_collectd_mlab.assert_collectd_installed)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_backend_is_missing(self):
     check_collectd_mlab.VSYSPATH_BACKEND = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.MissingVsysBackendCriticalError,
+        check_collectd_mlab.MissingVsysBackendError,
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_slice_is_missing(self):
     check_collectd_mlab.VSYSPATH_SLICE = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.MissingVsysFrontendCriticalError,
+        check_collectd_mlab.MissingVsysFrontendError,
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_acl_is_missing(self):
     check_collectd_mlab.VSYSPATH_ACL = 'does_not_exist'
 
     self.assertRaises(
-        check_collectd_mlab.MissingVsysAclCriticalError,
+        check_collectd_mlab.MissingVsysAclError,
         check_collectd_mlab.assert_collectd_vsys_setup)
 
   def testunit_assert_collectd_vsys_setup_WHEN_acl_incomplete(self):
@@ -183,7 +183,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
         self._testdata_dir, 'acl_missing_mlab_utility_slicename')
 
     self.assertRaises(
-        check_collectd_mlab.MissingSliceFromVsysAclCriticalError,
+        check_collectd_mlab.MissingSliceFromVsysAclError,
         check_collectd_mlab.assert_collectd_vsys_setup)
 
 

@@ -97,60 +97,62 @@ class NagiosStateError(Error):
 
 class CriticalError(Error):
   """A base class for all critical errors."""
-  pass
+
+  def __init__(self, message, *args):
+    Error.__init__(self, message % args)
 
 
-class MissingBinaryCriticalError(CriticalError):
+class MissingBinaryError(CriticalError):
   """The collectd binary is missing."""
   pass
 
 
-class MissingNagiosBinaryCriticalError(CriticalError):
+class MissingNagiosBinaryError(CriticalError):
   """The collectd-nagios binary is missing."""
   pass
 
 
-class MissingSocketCriticalError(CriticalError):
+class MissingSocketError(CriticalError):
   """The collectd socket is missing."""
   pass
 
 
-class ReadonlyFilesystemCriticalError(CriticalError):
+class ReadonlyFilesystemError(CriticalError):
   """Collectd is running on a read-only filesystem."""
   pass
 
 
-class SocketConnectionCriticalError(CriticalError):
+class SocketConnectionError(CriticalError):
   """Connecting to the collectd unix socket failed."""
   pass
 
 
-class SocketSendCommandCriticalError(CriticalError):
+class SocketSendCommandError(CriticalError):
   """Sending a command to collectd over the unix socket failed."""
   pass
 
 
-class SocketReadlineCriticalError(CriticalError):
+class SocketReadlineError(CriticalError):
   """Reading the response from collectd over the unix socket failed."""
   pass
 
 
-class MissingVsysBackendCriticalError(CriticalError):
+class MissingVsysBackendError(CriticalError):
   """The vsys backend script is missing."""
   pass
 
 
-class MissingVsysFrontendCriticalError(CriticalError):
+class MissingVsysFrontendError(CriticalError):
   """The vsys frontend FIFO is missing inside slice."""
   pass
 
 
-class MissingVsysAclCriticalError(CriticalError):
+class MissingVsysAclError(CriticalError):
   """The vsys ACL file is missing."""
   pass
 
 
-class MissingSliceFromVsysAclCriticalError(CriticalError):
+class MissingSliceFromVsysAclError(CriticalError):
   """The expected slice name was not found in the vsys ACL file."""
   pass
 
@@ -186,9 +188,8 @@ def sock_connect(path):
     sock.connect(path)
     return sock
   except socket.error as err:
-    raise SocketConnectionCriticalError(
-        'Failed to connect to socket %s! Received socket.error: %s' %
-        (path, err))
+    raise SocketConnectionError(
+        'Failed to connect to socket %s! Received socket.error: %s', path, err)
 
 
 def sock_sendcmd(sock, command):
@@ -209,8 +210,8 @@ def sock_sendcmd(sock, command):
   try:
     sock.send(command + '\n')
   except socket.error as err:
-    raise SocketSendCommandCriticalError(
-        'Sending %s failed: %s' % (command, err))
+    raise SocketSendCommandError(
+        'Sending %s failed: %s', command, err)
 
   status_message = sock_readline(sock)
   code = status_message.split(' ', 1)
@@ -238,8 +239,8 @@ def sock_readline(sock):
       data = sock.recv(1)
     return ''.join(buf)
   except socket.error as err:
-    raise SocketReadlineCriticalError(
-        'Failed to read message from collectd. Received error: %s' % err)
+    raise SocketReadlineError(
+        'Failed to read message from collectd. Received error: %s', err)
 
 
 def assert_collectd_installed():
@@ -250,18 +251,18 @@ def assert_collectd_installed():
   """
   # Is collectd installed?
   if not os.path.exists(COLLECTD_BIN):
-    raise MissingBinaryCriticalError(
-        'collectd binary not present: %s.' % COLLECTD_BIN)
+    raise MissingBinaryError(
+        'collectd binary not present: %s.', COLLECTD_BIN)
 
   # Is collectd-nagios plugin installed?
   if not os.path.exists(COLLECTD_NAGIOS):
-    raise MissingNagiosBinaryCriticalError(
-        'collectd-nagios binary not present: %s.' % COLLECTD_NAGIOS)
+    raise MissingNagiosBinaryError(
+        'collectd-nagios binary not present: %s.', COLLECTD_NAGIOS)
 
   # Is collectd socket available?
   if not os.path.exists(COLLECTD_UNIXSOCK):
-    raise MissingSocketCriticalError(
-        'collectd unixsock not present: %s.' % COLLECTD_UNIXSOCK)
+    raise MissingSocketError(
+        'collectd unixsock not present: %s.', COLLECTD_UNIXSOCK)
 
 
 def assert_collectd_responds():
@@ -272,8 +273,7 @@ def assert_collectd_responds():
   """
   # Is filesystem read-write ok?
   if not os.access(COLLECTD_PID, os.W_OK):
-    raise ReadonlyFilesystemCriticalError(
-        'collectd filesystem is read only!')
+    raise ReadonlyFilesystemError('collectd filesystem is read only!')
 
   # Is collectd responsive over unix socket?
   sock = sock_connect(COLLECTD_UNIXSOCK)
@@ -281,14 +281,13 @@ def assert_collectd_responds():
   # Can we request a value over socket?
   val = sock_sendcmd(sock, 'GETVAL "%s/meta/timer-read"' % HOSTNAME)
   if val <= 0:
-    raise SocketSendCommandCriticalError(
+    raise SocketSendCommandError(
         'collectd unixsock is open, but sending GETVAL command failed.')
 
   # Read as many lines as reported back from command.
   for _ in xrange(0, val):
     if not sock_readline(sock):
-      raise SocketReadlineCriticalError(
-          'Read an empty message from collectd socket.')
+      raise SocketReadlineError('Read an empty message from collectd socket.')
 
 
 def assert_collectd_vsys_setup():
@@ -299,24 +298,24 @@ def assert_collectd_vsys_setup():
   """
   # Is the vsys backend script installed?
   if not os.path.exists(VSYSPATH_BACKEND):
-    raise MissingVsysBackendCriticalError(
-        'The vsys backend script %s is missing!' % VSYSPATH_BACKEND)
+    raise MissingVsysBackendError(
+        'The vsys backend script %s is missing!', VSYSPATH_BACKEND)
 
   # Is the vsys frontend FIFO in the slice context?
   if not os.path.exists(VSYSPATH_SLICE):
-    raise MissingVsysFrontendCriticalError(
-        'The vsys frontend fifo %s is missing in slice!' % VSYSPATH_SLICE)
+    raise MissingVsysFrontendError(
+        'The vsys frontend fifo %s is missing in slice!', VSYSPATH_SLICE)
 
   # Is mlab_utility in the vsys acl for the backend script?
   try:
     acl = open(VSYSPATH_ACL, 'r').read().strip()
   except IOError:
-    raise MissingVsysAclCriticalError(
-        'Failed to read the vsys ACL: %s' % VSYSPATH_ACL)
+    raise MissingVsysAclError(
+        'Failed to read the vsys ACL: %s', VSYSPATH_ACL)
 
   if SLICENAME not in acl:
-    raise MissingSliceFromVsysAclCriticalError(
-        'Slice name %s is missing from ACL: %s' % (SLICENAME, VSYSPATH_ACL))
+    raise MissingSliceFromVsysAclError(
+        'Slice name %s is missing from ACL: %s', SLICENAME, VSYSPATH_ACL)
 
 
 def run_collectd_nagios(host, metric, value, warning, critical):
@@ -364,32 +363,29 @@ def assert_collectd_nagios_levels():
       'utility.mlab.' + HOSTNAME, 'storage/vs_quota_bytes-quota',
       'used', _mb_to_bytes(8000), _mb_to_bytes(9000))
   if exit_code != 0:
-    raise NagiosStateError('Storage quota usage is too high',
-                           status_code=exit_code)
+    raise NagiosStateError('Storage quota usage is too high', exit_code)
 
   # Is collectd cpu usage too high?
   exit_code = run_collectd_nagios(
       HOSTNAME, 'meta-collectd/process_cpu-system',
       'value', '0:5', '0:10')
   if exit_code != 0:
-    raise NagiosStateError('Collectd CPU usage is too high',
-                           status_code=exit_code)
+    raise NagiosStateError('Collectd CPU usage is too high', exit_code)
 
   # Actual memory usage should be pretty small, though vm size may be larger.
   exit_code = run_collectd_nagios(
       HOSTNAME, 'meta-collectd/process_memory-rss',
       'value', _mb_to_bytes(10), _mb_to_bytes(15))
   if exit_code != 0:
-    raise NagiosStateError('Collectd RSS memory usage is too high',
-                           status_code=exit_code)
+    raise NagiosStateError('Collectd RSS memory usage is too high', exit_code)
 
   # Is meta timer too high?
   exit_code = run_collectd_nagios(
       HOSTNAME, 'meta/timer-read',
       'value', '0:6', '0:100')
   if exit_code != 0:
-    raise NagiosStateError('Collectd mlab plugin taking too long to run',
-                           status_code=exit_code)
+    raise NagiosStateError(
+        'Collectd mlab plugin taking too long to run', exit_code)
 
 
 def assert_disk_last_sync_time():
