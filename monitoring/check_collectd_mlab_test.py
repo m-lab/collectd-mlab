@@ -273,13 +273,12 @@ class MLabNagiosTests(unittest.TestCase):
     self.assertTrue(mock_collectd_installed.called)
 
   def testunit_alarm(self):
-    check_collectd_mlab.init_alarm(1)
-    try:
-      time.sleep(5)
-      self.fail('Alarm did not trigger.')  # pragma: no cover.
-    except check_collectd_mlab.TimeoutError:
-      pass
-    check_collectd_mlab.cancel_alarm()
+    with check_collectd_mlab.AlarmAfterTimeout(1):
+      try:
+        time.sleep(5)
+        self.fail('Alarm did not trigger.')  # pragma: no cover.
+      except check_collectd_mlab.TimeoutError:
+        pass
 
   @mock.patch('sys.stdout')
   @mock.patch('check_collectd_mlab.check_collectd')

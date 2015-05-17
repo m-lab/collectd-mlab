@@ -424,30 +424,32 @@ def check_collectd():
   return (STATE_OK, msg)
 
 
-def init_alarm(timeout):
-  """Assigns a SIGALARM handler for timeout seconds."""
-  def handler(unused_signum, unused_frame):
-    """Raise a TimeoutError when called"""
-    raise TimeoutError('Timeout after %s' % timeout)
-  signal.signal(signal.SIGALRM, handler)
-  signal.alarm(timeout)
+class AlarmAfterTimeout(object):
+  """A context manager that raises SIGALARM after a given timeout."""
 
+  def __init__(self, timeout):
+    self._timeout = timeout
 
-def cancel_alarm():
-  """Cancels pending alarm."""
-  signal.alarm(0)
+  def __enter__(self):
+    """Registers a SIGALARM handler to fire after timeout seconds."""
+    def handler(unused_signum, unused_frame):
+      """Raise a TimeoutError when called"""
+      raise TimeoutError('Timeout after %s' % self._timeout)
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(self._timeout)
+
+  def __exit__(self, *unused_args):
+    """Cancels pending alarm."""
+    signal.alarm(0)
 
 
 def main():
-  init_alarm(DEFAULT_TIMEOUT)
-
-  try:
-    (status_code, message) = check_collectd()
-  except Exception as err:  # pylint: disable=W0703
-    status_code = STATE_UNKNOWN
-    message = str(err)
-
-  cancel_alarm()
+  with AlarmAfterTimeout(DEFAULT_TIMEOUT):
+    try:
+      (status_code, message) = check_collectd()
+    except Exception as err:  # pylint: disable=W0703
+      status_code = STATE_UNKNOWN
+      message = str(err)
 
   print '%s: %s' % (STATUS_MESSAGES.get(status_code, 'UNKNOWN'), message)
   sys.exit(status_code)
