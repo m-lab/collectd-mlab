@@ -180,7 +180,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
 
   def testunit_assert_collectd_vsys_setup_WHEN_acl_incomplete(self):
     check_collectd_mlab.VSYSPATH_ACL = os.path.join(
-        self._testdata_dir, 'acl_missing_mlab_utility_slicename')
+        self._testdata_dir, 'acl_missing_slice_name')
 
     self.assertRaises(
         check_collectd_mlab.MissingSliceFromVsysAclError,
