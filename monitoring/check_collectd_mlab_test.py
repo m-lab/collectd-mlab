@@ -32,8 +32,6 @@ import check_collectd_mlab
 class MLabNagiosSocketTests(unittest.TestCase):
 
   def setUp(self):
-    self._testdata_dir = os.path.join(
-        os.path.dirname(check_collectd_mlab.__file__), 'testdata')
     self.mock_sock = mock.Mock(spec_set=socket.socket)
 
   def testunit_sock_sendcmd_RETURNS_successfully(self):
@@ -70,20 +68,20 @@ class MLabNagiosSocketTests(unittest.TestCase):
 class MLabCollectdAssertionTests(unittest.TestCase):
 
   def setUp(self):
-    self._testdata_dir = os.path.join(
+    self.testdata_dir = os.path.join(
         os.path.dirname(check_collectd_mlab.__file__), 'testdata')
     check_collectd_mlab.COLLECTD_BIN = (
-        os.path.join(self._testdata_dir, 'fake_bin'))
+        os.path.join(self.testdata_dir, 'fake_bin'))
     check_collectd_mlab.COLLECTD_NAGIOS = (
-        os.path.join(self._testdata_dir, 'fake_bin'))
+        os.path.join(self.testdata_dir, 'fake_bin'))
     check_collectd_mlab.COLLECTD_PID = (
-        os.path.join(self._testdata_dir, 'fake_pid'))
+        os.path.join(self.testdata_dir, 'fake_pid'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = (
-        os.path.join(self._testdata_dir, 'fake_socket'))
+        os.path.join(self.testdata_dir, 'fake_socket'))
     check_collectd_mlab.VSYSPATH_BACKEND = (
-        os.path.join(self._testdata_dir, 'fake_backend'))
+        os.path.join(self.testdata_dir, 'fake_backend'))
     check_collectd_mlab.VSYSPATH_SLICE = (
-        os.path.join(self._testdata_dir, 'fake_slice'))
+        os.path.join(self.testdata_dir, 'fake_slice'))
 
   @mock.patch('check_collectd_mlab.sock_connect')
   def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(
@@ -141,7 +139,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
   def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_Error(
       self):
     check_collectd_mlab.COLLECTD_NAGIOS = (
-        os.path.join(self._testdata_dir, 'does_not_exist'))
+        os.path.join(self.testdata_dir, 'does_not_exist'))
 
     self.assertRaises(
         check_collectd_mlab.MissingNagiosBinaryError,
@@ -178,7 +176,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
 
   def testunit_assert_collectd_vsys_setup_WHEN_acl_incomplete(self):
     check_collectd_mlab.VSYSPATH_ACL = os.path.join(
-        self._testdata_dir, 'acl_missing_slice_name')
+        self.testdata_dir, 'acl_missing_slice_name')
 
     self.assertRaises(
         check_collectd_mlab.MissingSliceFromVsysAclError,
@@ -186,10 +184,6 @@ class MLabCollectdAssertionTests(unittest.TestCase):
 
 
 class MLabNagiosTests(unittest.TestCase):
-
-  def setUp(self):
-    self._testdata_dir = os.path.join(
-        os.path.dirname(check_collectd_mlab.__file__), 'testdata')
 
   @mock.patch('check_collectd_mlab.run_collectd_nagios')
   def testcover_assert_collectd_nagios_levels(self, mock_run_collectd_nagios):
