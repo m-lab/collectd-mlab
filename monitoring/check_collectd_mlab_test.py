@@ -34,26 +34,25 @@ class MLabNagiosSocketTests(unittest.TestCase):
   def setUp(self):
     self._testdata_dir = os.path.join(
         os.path.dirname(check_collectd_mlab.__file__), 'testdata')
+    self.mock_sock = mock.Mock(spec_set=socket.socket)
 
   def testunit_sock_sendcmd_RETURNS_successfully(self):
-    mock_sock = mock.Mock(spec_set=socket.socket)
-    mock_sock.recv.side_effect = list('1 default reply\n')
+    self.mock_sock.recv.side_effect = list('1 default reply\n')
 
     returned_value = check_collectd_mlab.sock_sendcmd(
-        mock_sock, 'GETVAL "whatever"')
+        self.mock_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 1)
-    mock_sock.send.assert_called_with('GETVAL "whatever"\n')
+    self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
   def testunit_sock_sendcmd_WHEN_receive_bad_reply_RETURNS_zero(self):
-    mock_sock = mock.Mock(spec_set=socket.socket)
-    mock_sock.recv.side_effect = list('not-a-number junk\n')
+    self.mock_sock.recv.side_effect = list('not-a-number junk\n')
 
     returned_value = check_collectd_mlab.sock_sendcmd(
-        mock_sock, 'GETVAL "whatever"')
+        self.mock_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 0)
-    mock_sock.send.assert_called_with('GETVAL "whatever"\n')
+    self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
   def testunit_sock_connect_WHEN_no_socket_RAISES_Error(self):
     self.assertRaises(
@@ -61,12 +60,11 @@ class MLabNagiosSocketTests(unittest.TestCase):
         check_collectd_mlab.sock_connect, 'no_socket_name')
 
   def testunit_sock_readline_WHEN_socket_error_RAISES_Error(self):
-    mock_sock = mock.Mock(spec_set=socket.socket)
-    mock_sock.recv.side_effect = socket.error('fake error')
+    self.mock_sock.recv.side_effect = socket.error('fake error')
 
     self.assertRaises(
         check_collectd_mlab.SocketReadlineError,
-        check_collectd_mlab.sock_readline, mock_sock)
+        check_collectd_mlab.sock_readline, self.mock_sock)
 
 
 class MLabCollectdAssertionTests(unittest.TestCase):
