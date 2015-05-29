@@ -52,11 +52,11 @@ class MLabNagiosSocketTests(unittest.TestCase):
     self.assertEqual(returned_value, 0)
     self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
-  def testunit_sock_connect_WHEN_no_socket_RAISES_Error(self):
+  def testunit_sock_connect_WHEN_no_socket_RAISES_error(self):
     with self.assertRaises(check_collectd_mlab.SocketConnectionError):
       check_collectd_mlab.sock_connect('no_socket_name')
 
-  def testunit_sock_readline_WHEN_socket_error_RAISES_Error(self):
+  def testunit_sock_readline_WHEN_socket_error_RAISES_error(self):
     self.mock_sock.recv.side_effect = socket.error('fake error')
 
     with self.assertRaises(check_collectd_mlab.SocketReadlineError):
@@ -125,14 +125,14 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     with self.assertRaises(check_collectd_mlab.SocketConnectionError):
       check_collectd_mlab.assert_collectd_responds()
 
-  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_Error(
+  def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_error(
       self):
     check_collectd_mlab.COLLECTD_BIN = 'does_not_exist'
 
     with self.assertRaises(check_collectd_mlab.MissingBinaryError):
       check_collectd_mlab.assert_collectd_installed()
 
-  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_Error(
+  def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_error(
       self):
     check_collectd_mlab.COLLECTD_NAGIOS = (
         os.path.join(self.testdata_dir, 'does_not_exist'))
@@ -140,7 +140,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     with self.assertRaises(check_collectd_mlab.MissingNagiosBinaryError):
       check_collectd_mlab.assert_collectd_installed()
 
-  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_Error(
+  def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_error(
       self):
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
