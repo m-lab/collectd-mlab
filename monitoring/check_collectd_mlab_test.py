@@ -52,9 +52,9 @@ class MLabNagiosSocketTests(unittest.TestCase):
     self.assertEqual(returned_value, 0)
     self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
-  def testunit_sock_connect_WHEN_no_socket_RAISES_error(self):
+  def testunit_sock_connect_WHEN_invalid_socket_name_RAISES_error(self):
     with self.assertRaises(check_collectd_mlab.SocketConnectionError):
-      check_collectd_mlab.sock_connect('no_socket_name')
+      check_collectd_mlab.sock_connect('invalid_socket_name')
 
   def testunit_sock_readline_WHEN_socket_error_RAISES_error(self):
     self.mock_sock.recv.side_effect = socket.error('fake error')
