@@ -53,16 +53,14 @@ class MLabNagiosSocketTests(unittest.TestCase):
     self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
 
   def testunit_sock_connect_WHEN_no_socket_RAISES_Error(self):
-    self.assertRaises(
-        check_collectd_mlab.SocketConnectionError,
-        check_collectd_mlab.sock_connect, 'no_socket_name')
+    with self.assertRaises(check_collectd_mlab.SocketConnectionError):
+      check_collectd_mlab.sock_connect('no_socket_name')
 
   def testunit_sock_readline_WHEN_socket_error_RAISES_Error(self):
     self.mock_sock.recv.side_effect = socket.error('fake error')
 
-    self.assertRaises(
-        check_collectd_mlab.SocketReadlineError,
-        check_collectd_mlab.sock_readline, self.mock_sock)
+    with self.assertRaises(check_collectd_mlab.SocketReadlineError):
+      check_collectd_mlab.sock_readline(self.mock_sock)
 
 
 class MLabCollectdAssertionTests(unittest.TestCase):
@@ -90,9 +88,9 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     mock_sock.send.side_effect = socket.error('fake socket error')
     mock_sock_connect.return_value = mock_sock
 
-    self.assertRaises(
-        check_collectd_mlab.SocketSendCommandError,
-        check_collectd_mlab.assert_collectd_responds)
+    with self.assertRaises(check_collectd_mlab.SocketSendCommandError):
+      check_collectd_mlab.assert_collectd_responds()
+
     mock_sock_connect.assert_called_with(
         check_collectd_mlab.COLLECTD_UNIXSOCK)
 
@@ -104,9 +102,9 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     mock_sock.recv.side_effect = list('1 default reply\n') + ['']
     mock_sock_connect.return_value = mock_sock
 
-    self.assertRaises(
-        check_collectd_mlab.SocketReadlineError,
-        check_collectd_mlab.assert_collectd_responds)
+    with self.assertRaises(check_collectd_mlab.SocketReadlineError):
+      check_collectd_mlab.assert_collectd_responds()
+
     mock_sock_connect.assert_called_with(
         check_collectd_mlab.COLLECTD_UNIXSOCK)
 
@@ -116,71 +114,63 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     # Mock out os.access to guarantee that write access is rejected.
     mock_access.return_value = False
 
-    self.assertRaises(
-        check_collectd_mlab.ReadonlyFilesystemError,
-        check_collectd_mlab.assert_collectd_responds)
+    with self.assertRaises(check_collectd_mlab.ReadonlyFilesystemError):
+      check_collectd_mlab.assert_collectd_responds()
+
     self.assertTrue(mock_access.called)
 
   def testunit_assert_collectd_responds_WHEN_sock_connect_fails(self):
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.SocketConnectionError,
-        check_collectd_mlab.assert_collectd_responds)
+    with self.assertRaises(check_collectd_mlab.SocketConnectionError):
+      check_collectd_mlab.assert_collectd_responds()
 
   def testunit_assert_collectd_installed_WHEN_bin_missing_RAISES_Error(
       self):
     check_collectd_mlab.COLLECTD_BIN = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingBinaryError,
-        check_collectd_mlab.assert_collectd_installed)
+    with self.assertRaises(check_collectd_mlab.MissingBinaryError):
+      check_collectd_mlab.assert_collectd_installed()
 
   def testunit_assert_collectd_installed_WHEN_nagios_bin_missing_Error(
       self):
     check_collectd_mlab.COLLECTD_NAGIOS = (
         os.path.join(self.testdata_dir, 'does_not_exist'))
 
-    self.assertRaises(
-        check_collectd_mlab.MissingNagiosBinaryError,
-        check_collectd_mlab.assert_collectd_installed)
+    with self.assertRaises(check_collectd_mlab.MissingNagiosBinaryError):
+      check_collectd_mlab.assert_collectd_installed()
 
   def testunit_assert_collectd_installed_WHEN_bad_socket_RAISES_Error(
       self):
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingSocketError,
-        check_collectd_mlab.assert_collectd_installed)
+    with self.assertRaises(check_collectd_mlab.MissingSocketError):
+      check_collectd_mlab.assert_collectd_installed()
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_backend_is_missing(self):
     check_collectd_mlab.VSYSPATH_BACKEND = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingVsysBackendError,
-        check_collectd_mlab.assert_collectd_vsys_setup)
+    with self.assertRaises(check_collectd_mlab.MissingVsysBackendError):
+      check_collectd_mlab.assert_collectd_vsys_setup()
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_slice_is_missing(self):
     check_collectd_mlab.VSYSPATH_SLICE = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingVsysFrontendError,
-        check_collectd_mlab.assert_collectd_vsys_setup)
+    with self.assertRaises(check_collectd_mlab.MissingVsysFrontendError):
+      check_collectd_mlab.assert_collectd_vsys_setup()
 
   def testunit_assert_collectd_vsys_setup_WHEN_vsys_acl_is_missing(self):
     check_collectd_mlab.VSYSPATH_ACL = 'does_not_exist'
 
-    self.assertRaises(
-        check_collectd_mlab.MissingVsysAclError,
-        check_collectd_mlab.assert_collectd_vsys_setup)
+    with self.assertRaises(check_collectd_mlab.MissingVsysAclError):
+      check_collectd_mlab.assert_collectd_vsys_setup()
 
   def testunit_assert_collectd_vsys_setup_WHEN_acl_incomplete(self):
     check_collectd_mlab.VSYSPATH_ACL = os.path.join(
         self.testdata_dir, 'acl_missing_slice_name')
 
-    self.assertRaises(
-        check_collectd_mlab.MissingSliceFromVsysAclError,
-        check_collectd_mlab.assert_collectd_vsys_setup)
+    with self.assertRaises(check_collectd_mlab.MissingSliceFromVsysAclError):
+      check_collectd_mlab.assert_collectd_vsys_setup()
 
 
 class MLabNagiosTests(unittest.TestCase):
@@ -190,20 +180,20 @@ class MLabNagiosTests(unittest.TestCase):
     # This is not ideal. But, it's just a coverage test.
     # Non-zero values cause a failue. Cause each call to to fail in sequence.
     mock_run_collectd_nagios.side_effect = [1]
-    self.assertRaises(check_collectd_mlab.NagiosStateError,
-                      check_collectd_mlab.assert_collectd_nagios_levels)
+    with self.assertRaises(check_collectd_mlab.NagiosStateError):
+      check_collectd_mlab.assert_collectd_nagios_levels()
 
     mock_run_collectd_nagios.side_effect = [0, 1]
-    self.assertRaises(check_collectd_mlab.NagiosStateError,
-                      check_collectd_mlab.assert_collectd_nagios_levels)
+    with self.assertRaises(check_collectd_mlab.NagiosStateError):
+      check_collectd_mlab.assert_collectd_nagios_levels()
 
     mock_run_collectd_nagios.side_effect = [0, 0, 1]
-    self.assertRaises(check_collectd_mlab.NagiosStateError,
-                      check_collectd_mlab.assert_collectd_nagios_levels)
+    with self.assertRaises(check_collectd_mlab.NagiosStateError):
+      check_collectd_mlab.assert_collectd_nagios_levels()
 
     mock_run_collectd_nagios.side_effect = [0, 0, 0, 1]
-    self.assertRaises(check_collectd_mlab.NagiosStateError,
-                      check_collectd_mlab.assert_collectd_nagios_levels)
+    with self.assertRaises(check_collectd_mlab.NagiosStateError):
+      check_collectd_mlab.assert_collectd_nagios_levels()
 
   @mock.patch('subprocess.Popen')
   def testcover_run_collectd_nagios(self, mock_popen):
@@ -276,7 +266,10 @@ class MLabNagiosTests(unittest.TestCase):
   @mock.patch('check_collectd_mlab.check_collectd')
   def testcover_main(self, mock_check_status, mock_stdout):
     mock_check_status.return_value = (check_collectd_mlab.STATE_OK, 'ok')
-    self.assertRaises(SystemExit, check_collectd_mlab.main)
+
+    with self.assertRaises(SystemExit):
+      check_collectd_mlab.main()
+
     self.assertTrue(len(mock_stdout.mock_calls) > 0)
     self.assertTrue(mock_check_status.called)
 
@@ -284,7 +277,10 @@ class MLabNagiosTests(unittest.TestCase):
   @mock.patch('check_collectd_mlab.check_collectd')
   def testcover_main_WHEN_timeout(self, mock_check_status, mock_stdout):
     mock_check_status.side_effect = check_collectd_mlab.TimeoutError('timeout')
-    self.assertRaises(SystemExit, check_collectd_mlab.main)
+
+    with self.assertRaises(SystemExit):
+      check_collectd_mlab.main()
+
     self.assertTrue(len(mock_stdout.mock_calls) > 0)
     self.assertTrue(mock_check_status.called)
 
