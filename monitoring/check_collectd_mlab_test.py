@@ -270,7 +270,7 @@ class MLabNagiosTests(unittest.TestCase):
     with self.assertRaises(SystemExit):
       check_collectd_mlab.main()
 
-    self.assertTrue(len(mock_stdout.mock_calls) > 0)
+    self.assertTrue(mock_stdout.write.called)
     self.assertTrue(mock_check_status.called)
 
   @mock.patch('sys.stdout')
@@ -281,7 +281,7 @@ class MLabNagiosTests(unittest.TestCase):
     with self.assertRaises(SystemExit):
       check_collectd_mlab.main()
 
-    self.assertTrue(len(mock_stdout.mock_calls) > 0)
+    self.assertTrue(mock_stdout.write.called)
     self.assertTrue(mock_check_status.called)
 
 
