@@ -88,9 +88,9 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     self.testdata_dir = os.path.join(
         os.path.dirname(check_collectd_mlab.__file__), 'testdata')
     check_collectd_mlab.COLLECTD_BIN = (
-        os.path.join(self.testdata_dir, 'fake_bin'))
+        os.path.join(self.testdata_dir, 'fake_collectd_bin'))
     check_collectd_mlab.COLLECTD_NAGIOS = (
-        os.path.join(self.testdata_dir, 'fake_bin'))
+        os.path.join(self.testdata_dir, 'fake_nagios_bin'))
     check_collectd_mlab.COLLECTD_PID = (
         os.path.join(self.testdata_dir, 'fake_pid'))
     check_collectd_mlab.COLLECTD_UNIXSOCK = (
