@@ -14,6 +14,7 @@
 # limitations under the License.
 """Unit tests for check_collectd_mlab check."""
 
+import io
 import os
 import socket
 import time
@@ -29,38 +30,56 @@ import check_collectd_mlab
 # pylint: disable=R0904
 
 
+class FakeSocketIO(object):
+  """An in-memory, IO object with a socket-like interface."""
+
+  def __init__(self, initial_value=''):
+    self._writer = io.BytesIO()
+    self._reader = io.BytesIO(initial_value)
+
+  def recv(self, count=-1):
+    """Reads count bytes from socket, or until EOF when count is -1."""
+    return self._reader.read(count)
+
+  def send(self, message):
+    """Writes message to socket."""
+    return self._writer.write(message)
+
+  def getvalue(self):
+    """Returns all bytes written to the socket."""
+    return self._writer.getvalue()
+
+
 class MLabNagiosSocketTests(unittest.TestCase):
 
-  def setUp(self):
-    self.mock_sock = mock.Mock(spec_set=socket.socket)
-
   def testunit_sock_sendcmd_RETURNS_successfully(self):
-    self.mock_sock.recv.side_effect = list('1 default reply\n')
+    fake_sock = FakeSocketIO('1 default reply\n')
 
     returned_value = check_collectd_mlab.sock_sendcmd(
-        self.mock_sock, 'GETVAL "whatever"')
+        fake_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 1)
-    self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
+    self.assertEqual(fake_sock.getvalue(), 'GETVAL "whatever"\n')
 
   def testunit_sock_sendcmd_WHEN_receive_bad_reply_RETURNS_zero(self):
-    self.mock_sock.recv.side_effect = list('not-a-number junk\n')
+    fake_sock = FakeSocketIO('not-a-number junk\n')
 
     returned_value = check_collectd_mlab.sock_sendcmd(
-        self.mock_sock, 'GETVAL "whatever"')
+        fake_sock, 'GETVAL "whatever"')
 
     self.assertEqual(returned_value, 0)
-    self.mock_sock.send.assert_called_with('GETVAL "whatever"\n')
+    self.assertEqual(fake_sock.getvalue(), 'GETVAL "whatever"\n')
 
   def testunit_sock_connect_WHEN_invalid_socket_name_RAISES_error(self):
     with self.assertRaises(check_collectd_mlab.SocketConnectionError):
       check_collectd_mlab.sock_connect('invalid_socket_name')
 
   def testunit_sock_readline_WHEN_socket_error_RAISES_error(self):
-    self.mock_sock.recv.side_effect = socket.error('fake error')
+    mock_sock = mock.Mock(spec_set=socket.socket)
+    mock_sock.recv.side_effect = socket.error('fake error')
 
     with self.assertRaises(check_collectd_mlab.SocketReadlineError):
-      check_collectd_mlab.sock_readline(self.mock_sock)
+      check_collectd_mlab.sock_readline(mock_sock)
 
 
 class MLabCollectdAssertionTests(unittest.TestCase):
@@ -97,10 +116,8 @@ class MLabCollectdAssertionTests(unittest.TestCase):
   @mock.patch('check_collectd_mlab.sock_connect')
   def testunit_assert_collectd_responds_WHEN_sock_readline_fails(
       self, mock_sock_connect):
-    mock_sock = mock.Mock(spec_set=socket.socket)
-    # After sending a default reply, send EOF ('') prematurely.
-    mock_sock.recv.side_effect = list('1 default reply\n') + ['']
-    mock_sock_connect.return_value = mock_sock
+    # After sending a default reply, the fake socket reaches EOF.
+    mock_sock_connect.return_value = FakeSocketIO('1 default reply\n')
 
     with self.assertRaises(check_collectd_mlab.SocketReadlineError):
       check_collectd_mlab.assert_collectd_responds()
