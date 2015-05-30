@@ -103,6 +103,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
   @mock.patch('check_collectd_mlab.sock_connect')
   def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(
       self, mock_sock_connect):
+    """Fails when sending a command after successfully creating a connection."""
     mock_sock = mock.Mock(spec_set=socket.socket)
     mock_sock.send.side_effect = socket.error('fake socket error')
     mock_sock_connect.return_value = mock_sock
@@ -116,6 +117,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
   @mock.patch('check_collectd_mlab.sock_connect')
   def testunit_assert_collectd_responds_WHEN_sock_readline_fails(
       self, mock_sock_connect):
+    """Fails when reading from socket after a successful connection."""
     # After sending a default reply, the fake socket reaches EOF.
     mock_sock_connect.return_value = FakeSocketIO('1 default reply\n')
 
@@ -137,6 +139,7 @@ class MLabCollectdAssertionTests(unittest.TestCase):
     self.assertTrue(mock_access.called)
 
   def testunit_assert_collectd_responds_WHEN_sock_connect_fails(self):
+    """Fails when creating a socket connection."""
     check_collectd_mlab.COLLECTD_UNIXSOCK = 'does_not_exist'
 
     with self.assertRaises(check_collectd_mlab.SocketConnectionError):
