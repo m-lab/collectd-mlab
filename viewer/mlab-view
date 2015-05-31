@@ -110,6 +110,8 @@ def get_access_config():
 def is_running(pid):
   """Checks whether the given pid is running or not."""
   try:
+    # Signal 0 has no effect on a running process, but fails when the
+    # process does not exit.
     os.kill(pid, 0)
     return True
   except OSError:
