@@ -68,7 +68,6 @@ install -D -m 644 export/export_metrics.conf		%{buildroot}/usr/share/collectd-ml
 
 # Configuration for *limited* access to collectd-web.
 install -D -m 755 viewer/mlab-view 			%{buildroot}/usr/bin/mlab-view
-install -D -m 755 viewer/httpd-config.py		%{buildroot}/usr/share/collectd-mlab/httpd-config.py
 install -D -m 644 viewer/httpd.collectd.conf		%{buildroot}/usr/share/collectd-mlab/httpd.conf
 install -D -m 644 viewer/collection-mlab.conf		%{buildroot}/etc/collection-mlab.conf
 
@@ -103,9 +102,8 @@ rm -rf $RPM_BUILD_ROOT
 /etc/cron.d/mlab_export.cron
 /etc/cron.daily/mlab_export_cleanup.cron
 
-# Configuration and *limited* access to collectd-web.
+# Configuration for *limited* access to collectd-web.
 /usr/bin/mlab-view
-/usr/share/collectd-mlab/httpd-config.py
 /usr/share/collectd-mlab/httpd.conf
 /etc/collection-mlab.conf
 
@@ -123,15 +121,6 @@ rm -rf $RPM_BUILD_ROOT
 COLLECTD_LINK="/usr/share/collectd/collection3/etc/collection.conf"
 if test -f "${COLLECTD_LINK}" ; then
   ln -f -s /etc/collection-mlab.conf "${COLLECTD_LINK}"
-fi
-
-# TODO: how to disable apache inside the slice?
-# TODO: what other options are available for serving the cgi files?
-# TODO: should the access control script be run by mlab-view instead?
-# NOTE: generate an apache access rule based on local IP address.
-ACCESS_CONF="/usr/share/collectd-mlab/access.conf"
-if ! test -f "${ACCESS_CONF}" ; then
-  /usr/share/collectd-mlab/httpd-config.py > "${ACCESS_CONF}"
 fi
 
 chkconfig crond on
