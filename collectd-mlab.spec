@@ -65,6 +65,8 @@ install -D -m 755 export/mlab_export_cleanup.cron	%{buildroot}/etc/cron.daily/ml
 install -D -m 644 export/mlab_export.cron		%{buildroot}/etc/cron.d/mlab_export.cron
 install -D -m 755 export/mlab_export.py			%{buildroot}/usr/bin/mlab_export.py
 install -D -m 644 export/export_metrics.conf		%{buildroot}/usr/share/collectd-mlab/export_metrics.conf
+install -D -m 644 export/mlab_collectd_watchdog.cron	%{buildroot}/etc/cron.d/mlab_collectd_watchdog.cron
+install -D -m 755 export/mlab_collectd_watchdog.sh		%{buildroot}/usr/share/collectd-mlab/mlab_collectd_watchdog.sh
 
 # Configuration for *limited* access to collectd-web.
 install -D -m 755 viewer/mlab-view 			%{buildroot}/usr/bin/mlab-view
@@ -99,7 +101,9 @@ rm -rf $RPM_BUILD_ROOT
 # Data export scripts.
 /usr/bin/mlab_export.py
 /usr/share/collectd-mlab/export_metrics.conf
+/usr/share/collectd-mlab/mlab_collectd_watchdog.sh
 /etc/cron.d/mlab_export.cron
+/etc/cron.d/mlab_collectd_watchdog.cron
 /etc/cron.daily/mlab_export_cleanup.cron
 
 # Configuration for *limited* access to collectd-web.
