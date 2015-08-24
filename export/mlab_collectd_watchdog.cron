@@ -1,0 +1,6 @@
+#
+# Run watchdog every five minutes to guarantee that collectd is running.
+#
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+
+*/5 * * * * root  flock --exclusive --nonblock /tmp/mlab_collectd_watchdog.lock -c /usr/share/collectd-mlab/mlab_collectd_watchdog.sh > /dev/null
