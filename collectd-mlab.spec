@@ -3,7 +3,7 @@
 #
 %define name collectd-mlab
 %define slicename mlab_utility
-%define version 0.99
+%define version 0.999
 %define taglevel alpha
 %define releasetag %{taglevel}%{?date:.%{date}}
 
@@ -144,24 +144,24 @@ if test -n "${DEVEL_ENVIRONMENT}" ; then
 fi
 
 
-%package vsys
+%package host
 Summary: The vsys backend scripts to support collectd-mlab.
 Requires: python
 Requires: vsys
 # TODO: add a dependency in nodebase on package "collectd-mlab-vsys".
 
-%description vsys
+%description host
 The collectd-mlab-vsys package includes support scripts that should run in the
 root context of the M-Lab server.
 
-%files vsys
+%files host
 # Vsys backend.
 /vsys/vs_resource_backend
 
 # Monitoring.
 /usr/lib/nagios/plugins/check_collectd_mlab.py
 
-%pre vsys
+%pre host
 # Check if we're trying to install the vsys packate in a guest context.
 if test -f /dev/hdv1 ; then
   echo "WARNING: The vsys backend should be installed in host (root) context."
