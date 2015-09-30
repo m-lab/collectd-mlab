@@ -288,7 +288,7 @@ def default_output_name(ts_start, ts_end, output_dir):
   """Creates a default output filename based on time range and output dir.
 
   Filenames are formatted with time stamps as:
-      <output_dir>/resource-utilization/YYYY/MM/DD/<HOSTNAME>/
+      <output_dir>/utilization/YYYY/MM/DD/<HOSTNAME>/
           <ts_start>-to-<ts_end>-metrics.json
 
   The YYYY, MM, DD in the path are taken from ts_start.
@@ -306,7 +306,7 @@ def default_output_name(ts_start, ts_end, output_dir):
       time.strftime('%Y%m%dT%H:%M:%S', time.localtime(ts_end)))
   date_path = time.strftime('%Y/%m/%d', time.localtime(ts_start))
   full_path = os.path.join(
-      output_dir, 'resource-utilization', date_path, HOSTNAME)
+      output_dir, 'utilization', date_path, HOSTNAME)
   return os.path.join(full_path, filename)
 
 

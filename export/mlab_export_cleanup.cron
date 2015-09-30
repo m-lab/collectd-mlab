@@ -8,7 +8,7 @@
 # Rotate log over last week.
 LOG=$(( $(date +%j) % 7 ))
 LOGFILE=/var/log/mlab-export-cleanup.log.${LOG}
-RSYNCDIR=/var/spool/mlab_utility/resource-utilization
+RSYNCDIR=/var/spool/mlab_utility/utilization
 
 # Find all files with mtime older than 30 days (+29), print, and remove file.
 find "${RSYNCDIR}" -type f -mtime +29 -a -print -delete &> $LOGFILE
