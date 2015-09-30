@@ -172,7 +172,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
   def testunit_default_output_name(self):
     mlab_export.HOSTNAME = 'mlab2.nuq0t'
     expected_value = ('/output/resource-utilization/2014/09/06/mlab2.nuq0t/'
-                      'metrics-20140906T105640-to-20140906T115640.json')
+                      '20140906T10:56:40-to-20140906T11:56:40-metrics.json')
     start = FAKE_TIMESTAMP
     end = start + 3600
 
@@ -266,7 +266,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     expected_files = [rrd_dir + '/mlab2.nuq0t/file2.rrd',
                       rrd_dir + '/mlab2.nuq0t/file1.rrd']
 
-    self.assertEqual(mlab_export.get_rrd_files(rrd_dir), expected_files)
+    self.assertSequenceEqual(sorted(mlab_export.get_rrd_files(rrd_dir)),
+                             sorted(expected_files))
 
   @mock.patch('mlab_export.get_rrd_files')
   @mock.patch('mlab_export.rrdtool.fetch')

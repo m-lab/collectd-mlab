@@ -289,7 +289,7 @@ def default_output_name(ts_start, ts_end, output_dir):
 
   Filenames are formatted with time stamps as:
       <output_dir>/resource-utilization/YYYY/MM/DD/<HOSTNAME>/
-          metrics-<ts_start>-to-<ts_end>.json
+          <ts_start>-to-<ts_end>-metrics.json
 
   The YYYY, MM, DD in the path are taken from ts_start.
   Both <ts_start> and <ts_end> are formatted as: YYYYMMDDTHHMMSS
@@ -301,9 +301,9 @@ def default_output_name(ts_start, ts_end, output_dir):
   Returns:
     str, absolute path of generated output file name.
   """
-  filename = 'metrics-%s-to-%s.json' % (
-      time.strftime('%Y%m%dT%H%M%S', time.localtime(ts_start)),
-      time.strftime('%Y%m%dT%H%M%S', time.localtime(ts_end)))
+  filename = '%s-to-%s-metrics.json' % (
+      time.strftime('%Y%m%dT%H:%M:%S', time.localtime(ts_start)),
+      time.strftime('%Y%m%dT%H:%M:%S', time.localtime(ts_end)))
   date_path = time.strftime('%Y/%m/%d', time.localtime(ts_start))
   full_path = os.path.join(
       output_dir, 'resource-utilization', date_path, HOSTNAME)
