@@ -266,7 +266,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
     expected_files = [rrd_dir + '/mlab2.nuq0t/file2.rrd',
                       rrd_dir + '/mlab2.nuq0t/file1.rrd']
 
-    self.assertEqual(mlab_export.get_rrd_files(rrd_dir), expected_files)
+    self.assertSequenceEqual(sorted(mlab_export.get_rrd_files(rrd_dir)),
+                             sorted(expected_files))
 
   @mock.patch('mlab_export.get_rrd_files')
   @mock.patch('mlab_export.rrdtool.fetch')
