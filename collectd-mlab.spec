@@ -3,7 +3,7 @@
 #
 %define name collectd-mlab
 %define slicename mlab_utility
-%define version 0.999
+%define version 1.0
 %define taglevel alpha
 %define releasetag %{taglevel}%{?date:.%{date}}
 
