@@ -5,7 +5,7 @@ python:
 # Install non-pip dependencies
 addons:
   apt:
-    sources:
+    packages:
       - librrd-dev
 # Install dependencies
 install:
