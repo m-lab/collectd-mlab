@@ -1,6 +1,9 @@
 collectd-mlab
 =============
 
+[![Build Status](https://travis-ci.org/m-lab/collectd-mlab.svg?branch=master)](https://travis-ci.org/m-lab/collectd-mlab)
+[![Coverage Status](https://coveralls.io/repos/m-lab/collectd-mlab/badge.svg?branch=master&service=github)](https://coveralls.io/github/m-lab/collectd-mlab?branch=master)
+
 The collectd-mlab package provides a collectd plugin and associated scripts for
 continuous monitoring and periodic export of metrics. This package is designed
 to run in the M-Lab experiment environment.
