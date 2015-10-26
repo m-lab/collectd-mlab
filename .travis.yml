@@ -1,0 +1,16 @@
+language: python
+python:
+  - "2.7"
+# Install dependencies dependencies.
+before_install:
+    - sudo apt-get install -y librrd-dev
+# Install dependencies
+install:
+    - pip install -r requirements.txt
+    - pip install -r test-requirements.txt
+# Run unit tests
+script:
+    - python -m unittest discover -s export/ -p '*_test.py'
+    - python -m unittest discover -s monitoring/ -p '*_test.py'
+    - python -m unittest discover -s plugin/ -p '*_test.py'
+    - python -m unittest discover -s system/vsys/ -p '*_test.py'

@@ -818,6 +818,7 @@ class MlabCollectdPlugin_MetricTests(unittest.TestCase):
 
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testunit_report_cpuavg_for_system(self):
+    mlab._CPU_COUNT = 2
     test_stat_path = os.path.join(self._testdata_dir, 'proc_stat')
     mlab._root_hostname = 'fake.host'
 
@@ -909,6 +910,7 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
   # So, setup is more involved, and the minimum objects are patched.
   @mock.patch('mlab.collectd.Values', new=FakeValues)
   def testintegration_plugin_read(self):
+    mlab._CPU_COUNT = 2
     mlab._PROC_PID_STAT = os.path.join(self._testdata_dir, 'proc_pid_stat')
     mlab._PROC_STAT = os.path.join(self._testdata_dir, 'proc_stat')
     mlab._PROC_UPTIME = os.path.join(self._testdata_dir, 'uptime')

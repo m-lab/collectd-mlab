@@ -95,6 +95,7 @@ class MlabVsResourceBackendTests(unittest.TestCase):
   @mock.patch('vs_resource_backend.vc_get_dlimit')
   def testunit_get_xid_dlimits_WHEN_vc_get_dlimit_RAISES_Exception(self,
       mock_vc_get_dlimit):
+    vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
     mock_vc_get_dlimit.side_effect = (
         vs_resource_backend.LibVserverError('broken system call'))
     expected_value = {}
