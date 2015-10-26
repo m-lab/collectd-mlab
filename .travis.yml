@@ -3,10 +3,12 @@ python:
   - "2.6"
   - "2.7"
 # Install non-pip dependencies
-addons:
-  apt:
-    packages:
-      - librrd-dev
+before_install:
+  - sudo apt-get install -y librrd-dev
+#addons:
+#  apt:
+#    packages:
+#      - librrd-dev
 # Install dependencies
 install:
     - pip install -r requirements.txt
@@ -18,4 +20,5 @@ script:
     - python -m unittest2 discover -s monitoring/ -p '*_test.py'
     - python -m unittest2 discover -s plugin/ -p '*_test.py'
     - python -m unittest2 discover -s system/vsys/ -p '*_test.py'
-sudo: false
+#sudo: false
+sudo: required
