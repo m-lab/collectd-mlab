@@ -1,7 +1,7 @@
 language: python
 python:
   - "2.7"
-# Install dependencies dependencies.
+# Install dependencies dependencies
 before_install:
     - sudo apt-get install -y librrd-dev
 # Install dependencies
