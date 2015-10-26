@@ -1,5 +1,6 @@
 language: python
 python:
+  - "2.6"
   - "2.7"
 # Install dependencies dependencies
 before_install:
@@ -14,3 +15,4 @@ script:
     - python -m unittest discover -s monitoring/ -p '*_test.py'
     - python -m unittest discover -s plugin/ -p '*_test.py'
     - python -m unittest discover -s system/vsys/ -p '*_test.py'
+sudo: false
