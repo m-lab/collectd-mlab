@@ -302,9 +302,9 @@ def default_output_name(ts_start, ts_end, output_dir):
     str, absolute path of generated output file name.
   """
   filename = '%s-to-%s-metrics.json' % (
-      time.strftime('%Y%m%dT%H:%M:%S', time.localtime(ts_start)),
-      time.strftime('%Y%m%dT%H:%M:%S', time.localtime(ts_end)))
-  date_path = time.strftime('%Y/%m/%d', time.localtime(ts_start))
+      time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_start)),
+      time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_end)))
+  date_path = time.strftime('%Y/%m/%d', time.gmtime(ts_start))
   full_path = os.path.join(
       output_dir, 'utilization', date_path, HOSTNAME)
   return os.path.join(full_path, filename)

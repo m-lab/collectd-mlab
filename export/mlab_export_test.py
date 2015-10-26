@@ -172,7 +172,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
   def testunit_default_output_name(self):
     mlab_export.HOSTNAME = 'mlab2.nuq0t'
     expected_value = ('/output/utilization/2014/09/06/mlab2.nuq0t/'
-                      '20140906T06:56:40-to-20140906T07:56:40-metrics.json')
+                      '20140906T10:56:40-to-20140906T11:56:40-metrics.json')
     start = FAKE_TIMESTAMP
     end = start + 3600
 
