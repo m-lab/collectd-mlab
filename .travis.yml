@@ -12,9 +12,10 @@ install:
     - pip install -r requirements.txt
     - pip install -r test-requirements.txt
 # Run unit tests
+# Use unittest2 for backward compatibility with python 2.6.
 script:
-    - python -m unittest discover -s export/ -p '*_test.py'
-    - python -m unittest discover -s monitoring/ -p '*_test.py'
-    - python -m unittest discover -s plugin/ -p '*_test.py'
-    - python -m unittest discover -s system/vsys/ -p '*_test.py'
+    - python -m unittest2 discover -s export/ -p '*_test.py'
+    - python -m unittest2 discover -s monitoring/ -p '*_test.py'
+    - python -m unittest2 discover -s plugin/ -p '*_test.py'
+    - python -m unittest2 discover -s system/vsys/ -p '*_test.py'
 sudo: false
