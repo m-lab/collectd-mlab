@@ -10,8 +10,11 @@ addons:
 install:
     - pip install -r requirements.txt
     - pip install -r test-requirements.txt
-# Run unit tests
+    - pip install yapf==0.7.0
 script:
+    # YAPF must be first or it causes Travis to hang for some reason.
+    - yapf --diff --recursive --style google ./
+    # Run unit tests
     - python -m unittest discover -s export/ -p '*_test.py'
     - python -m unittest discover -s monitoring/ -p '*_test.py'
     - python -m unittest discover -s plugin/ -p '*_test.py'

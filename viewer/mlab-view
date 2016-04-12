@@ -62,7 +62,6 @@ import time
 # Third-party modules.
 import netifaces
 
-
 ACCESS_CONF = '/usr/share/collectd-mlab/access.conf'
 HTTPD_BIN = '/usr/sbin/httpd'
 HTTPD_CONFIG = '/usr/share/collectd-mlab/httpd.conf'
@@ -70,33 +69,33 @@ HTTPD_PID = '/etc/httpd/run/httpd.pid'
 
 
 def log(msg):
-  """Sends log message to syslog."""
-  print msg
-  syslog.syslog(syslog.LOG_ERR, 'mlab-view: %s' % msg)
+    """Sends log message to syslog."""
+    print msg
+    syslog.syslog(syslog.LOG_ERR, 'mlab-view: %s' % msg)
 
 
 def ignore_signal_handler(signal, _):
-  """Handler to ignore any signal."""
-  log('Ignoring signal: %s' % signal)
+    """Handler to ignore any signal."""
+    log('Ignoring signal: %s' % signal)
 
 
 def get_address():
-  """Returns local IPv4 & IPv6 addresses as a string separated by spaces."""
-  addrs = []
-  for iface in netifaces.interfaces():
-    if iface == 'lo':
-      continue
-    addresses = netifaces.ifaddresses(iface)
-    for addr_type in (netifaces.AF_INET, netifaces.AF_INET6):
-      if addr_type in addresses:
-        addrs.extend([addr['addr'] for addr in addresses[addr_type]])
-  if not addrs:
-    return '127.0.0.1'
-  return ' '.join(addrs)
+    """Returns local IPv4 & IPv6 addresses as a string separated by spaces."""
+    addrs = []
+    for iface in netifaces.interfaces():
+        if iface == 'lo':
+            continue
+        addresses = netifaces.ifaddresses(iface)
+        for addr_type in (netifaces.AF_INET, netifaces.AF_INET6):
+            if addr_type in addresses:
+                addrs.extend([addr['addr'] for addr in addresses[addr_type]])
+    if not addrs:
+        return '127.0.0.1'
+    return ' '.join(addrs)
 
 
 def get_access_config():
-  return """
+    return """
 <Directory /usr/share/collectd/>
     AddHandler cgi-script .cgi
     DirectoryIndex bin/index.cgi
@@ -108,18 +107,18 @@ def get_access_config():
 
 
 def is_running(pid):
-  """Checks whether the given pid is running or not."""
-  try:
-    # Signal 0 has no effect on a running process, but fails when the
-    # process does not exit.
-    os.kill(pid, 0)
-    return True
-  except OSError:
-    return False
+    """Checks whether the given pid is running or not."""
+    try:
+        # Signal 0 has no effect on a running process, but fails when the
+        # process does not exit.
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
 
 
 def ssh_connection_has_closed(pid):
-  """Determines whether the ssh session that started pid is still open.
+    """Determines whether the ssh session that started pid is still open.
 
   Callers should check that pid is actually running.
 
@@ -128,101 +127,101 @@ def ssh_connection_has_closed(pid):
   Returns:
     bool, True if the connection has closed, False otherwise.
   """
-  # From the host context, ps can see the entire process tree. The process tree
-  # runs from sshd in the host context to httpd running in the mlab_utility
-  # slice. For example:
-  #
-  # CONTEXT       PPID   PID COMMAND
-  # MAIN             1  1118 /usr/sbin/sshd
-  # MAIN          1118 10594 sshd: mlab_utility [priv]
-  # MAIN         10594 10606 sshd: mlab_utility@notty
-  # MAIN         10606 10607 /bin/su - mlab_utility -c sudo mlab-view
-  # mlab_utility 10607 10668 sudo mlab-view
-  # mlab_utility 10668 10689 /usr/bin/python /usr/bin/mlab-view
-  # mlab_utility 10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
-  #
-  # From within the mlab_utility slice, ps can only see processes in the slice.
-  #
-  #               PPID   PID COMMAND
-  #              10606 10607 /bin/su - mlab_utility -c sudo mlab-view
-  #              10607 10668 sudo mlab-view
-  #              10668 10689 /usr/bin/python /usr/bin/mlab-view
-  #              10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
-  #
-  # The ppid for /bin/su references an sshd process in the host context, until
-  # the client connection closes. Once the ssh connection closes, the sshd
-  # process exits and the /bin/su parent pid changes to 1.
-  #
-  #               PPID   PID COMMAND
-  #                  1 10607 /bin/su - mlab_utility -c sudo mlab-view
-  #
-  # That change signals that mlab-view should shutdown httpd and exit.
-  try:
-    status_lines = open('/proc/%s/status' % pid, 'r').readlines()
-  except IOError:
-    return False
+    # From the host context, ps can see the entire process tree. The process tree
+    # runs from sshd in the host context to httpd running in the mlab_utility
+    # slice. For example:
+    #
+    # CONTEXT       PPID   PID COMMAND
+    # MAIN             1  1118 /usr/sbin/sshd
+    # MAIN          1118 10594 sshd: mlab_utility [priv]
+    # MAIN         10594 10606 sshd: mlab_utility@notty
+    # MAIN         10606 10607 /bin/su - mlab_utility -c sudo mlab-view
+    # mlab_utility 10607 10668 sudo mlab-view
+    # mlab_utility 10668 10689 /usr/bin/python /usr/bin/mlab-view
+    # mlab_utility 10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
+    #
+    # From within the mlab_utility slice, ps can only see processes in the slice.
+    #
+    #               PPID   PID COMMAND
+    #              10606 10607 /bin/su - mlab_utility -c sudo mlab-view
+    #              10607 10668 sudo mlab-view
+    #              10668 10689 /usr/bin/python /usr/bin/mlab-view
+    #              10689 10692 /usr/sbin/httpd -X -f /usr/share/.../httpd.conf
+    #
+    # The ppid for /bin/su references an sshd process in the host context, until
+    # the client connection closes. Once the ssh connection closes, the sshd
+    # process exits and the /bin/su parent pid changes to 1.
+    #
+    #               PPID   PID COMMAND
+    #                  1 10607 /bin/su - mlab_utility -c sudo mlab-view
+    #
+    # That change signals that mlab-view should shutdown httpd and exit.
+    try:
+        status_lines = open('/proc/%s/status' % pid, 'r').readlines()
+    except IOError:
+        return False
 
-  name_lines = filter(lambda x: x.startswith('Name:'), status_lines)
-  if not name_lines:
-    return False
+    name_lines = filter(lambda x: x.startswith('Name:'), status_lines)
+    if not name_lines:
+        return False
 
-  ppid_lines = filter(lambda x: x.startswith('PPid:'), status_lines)
-  if not ppid_lines:
-    return False
+    ppid_lines = filter(lambda x: x.startswith('PPid:'), status_lines)
+    if not ppid_lines:
+        return False
 
-  # To allow running mlab-view from root context, also stop searching when the
-  # process name contains 'sshd'.
-  ppid = int(ppid_lines[0].split()[1])
-  if 'sshd' in name_lines[0] or ppid == 1:
-    # If the parent pid is 1, then the connection has closed.
-    return ppid == 1
+    # To allow running mlab-view from root context, also stop searching when the
+    # process name contains 'sshd'.
+    ppid = int(ppid_lines[0].split()[1])
+    if 'sshd' in name_lines[0] or ppid == 1:
+        # If the parent pid is 1, then the connection has closed.
+        return ppid == 1
 
-  # Continue up the process tree.
-  return ssh_connection_has_closed(ppid)
+    # Continue up the process tree.
+    return ssh_connection_has_closed(ppid)
 
 
 def main():
-  # Ignore signals forwarded by pseudo-ttys allocated by ssh.
-  signal.signal(signal.SIGTERM, ignore_signal_handler)
+    # Ignore signals forwarded by pseudo-ttys allocated by ssh.
+    signal.signal(signal.SIGTERM, ignore_signal_handler)
 
-  try:
-    # Unconditionally write httpd access rule with local IP address.
-    open(ACCESS_CONF, 'w').write(get_access_config())
-  except IOError as err:
-    log(err)
-    sys.exit(1)
+    try:
+        # Unconditionally write httpd access rule with local IP address.
+        open(ACCESS_CONF, 'w').write(get_access_config())
+    except IOError as err:
+        log(err)
+        sys.exit(1)
 
-  if os.path.exists(HTTPD_PID):
-    log('httpd pid file present. Is httpd already running?')
-    sys.exit(1)
+    if os.path.exists(HTTPD_PID):
+        log('httpd pid file present. Is httpd already running?')
+        sys.exit(1)
 
-  # TODO: what other options are available for serving the cgi files?
-  args = [HTTPD_BIN, '-X', '-f', HTTPD_CONFIG]
-  try:
-    child = subprocess.Popen(args)
-  except OSError as err:
-    log(err)
-    sys.exit(1)
+    # TODO: what other options are available for serving the cgi files?
+    args = [HTTPD_BIN, '-X', '-f', HTTPD_CONFIG]
+    try:
+        child = subprocess.Popen(args)
+    except OSError as err:
+        log(err)
+        sys.exit(1)
 
-  log('Started web server pid:%s' % child.pid)
-  pid = os.getpid()
-  while True:
-    if not is_running(pid):
-      break
+    log('Started web server pid:%s' % child.pid)
+    pid = os.getpid()
+    while True:
+        if not is_running(pid):
+            break
 
-    if ssh_connection_has_closed(pid):
-      # When the ssh session ends, no one is interacting with server, so
-      # shutdown the server.
-      break
-    time.sleep(1)
+        if ssh_connection_has_closed(pid):
+            # When the ssh session ends, no one is interacting with server, so
+            # shutdown the server.
+            break
+        time.sleep(1)
 
-  log('Killing web server pid:%s' % child.pid)
-  child.kill()
-  try:
-    os.remove(HTTPD_PID)
-  except OSError:
-    pass
+    log('Killing web server pid:%s' % child.pid)
+    child.kill()
+    try:
+        os.remove(HTTPD_PID)
+    except OSError:
+        pass
 
 
 if __name__ == '__main__':
-  main()
+    main()
