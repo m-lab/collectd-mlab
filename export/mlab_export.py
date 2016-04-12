@@ -258,6 +258,18 @@ def default_start_time(options, ts_previous):
   return align_timestamp(start, options.step)
 
 
+def default_end_time(step):
+  """Calculates a default end timestamp aligned to step based on current time.
+
+  Args:
+    step: int, interval to align end time.
+
+  Returns:
+    int, timestamp in seconds since the epoch.
+  """
+  return align_timestamp(int(time.time()), step)
+
+
 def assert_start_and_end_times(options):
   """Performs a sanity check on start and end timestamps.
 
@@ -550,8 +562,8 @@ def init_args(options, ts_previous):
     options.ts_start = default_start_time(options, ts_previous)
 
   if options.ts_end is None:
-    options.ts_end = (
-        align_timestamp(options.ts_start, options.step) + options.length)
+    options.ts_end = default_end_time(options.length)
+    options.length = options.ts_end - options.ts_start
 
   if any_show_options(options):
     options.update = False
