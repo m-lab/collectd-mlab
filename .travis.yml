@@ -10,13 +10,20 @@ addons:
 install:
     - pip install -r requirements.txt
     - pip install -r test-requirements.txt
+    - pip install coveralls
+    - pip install pyflakes==1.0.0
     - pip install yapf==0.7.0
+    - pip install pylint==1.5.5
 script:
     # YAPF must be first or it causes Travis to hang for some reason.
-    - yapf --diff --recursive --style google ./
+    - yapf --diff --recursive --style google ./ --exclude=./third_party/*
+    # Run static analysis for Python bugs/cruft.
+    - pyflakes  .
     # Run unit tests
     - python -m unittest discover -s export/ -p '*_test.py'
     - python -m unittest discover -s monitoring/ -p '*_test.py'
     - python -m unittest discover -s plugin/ -p '*_test.py'
     - python -m unittest discover -s system/vsys/ -p '*_test.py'
+    # Run the docstring lint checker.
+    - PYTHONPATH=$PYTHONPATH:$PWD/third_party/docstringchecker pylint --reports=n plugin/*.py export/*.py monitoring/*.py system/vsys/*.py
 sudo: false

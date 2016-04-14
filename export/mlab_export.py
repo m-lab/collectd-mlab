@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Summary:
+
   mlab_export.py serializes RRD data collected by the M-Lab, collectd plugin.
 
   mlab_export.py supports many options for use by a human operator. However,
@@ -192,7 +193,7 @@ class LockFile(object):
         except IOError as err:
             raise LockFileError(err)
 
-    def __exit__(self, *unused_args):
+    def __exit__(self, *args):
         """Releases file lock on filename."""
         self._handle.close()
 
@@ -200,14 +201,16 @@ class LockFile(object):
 def get_mtime(last_export_filename):
     """Returns the file mtime, or zero if last_export_filename was created.
 
-  Args:
-    last_export_filename: str, absolute path to last export time stamp file.
-  Returns:
-    int, 0 if the file was created, or the mtime of existing file.
-  Raises:
-    IOError, if last_export_filename does not exist and cannot be created.
-    OSError, if last_export_filename exists but stat info cannot be read.
-  """
+    Args:
+      last_export_filename: str, absolute path to last export time stamp file.
+
+    Returns:
+      int, 0 if the file was created, or the mtime of existing file.
+
+    Raises:
+      IOError, if last_export_filename does not exist and cannot be created.
+      OSError, if last_export_filename exists but stat info cannot be read.
+    """
     if not os.path.exists(last_export_filename):
         open(last_export_filename, 'w').close()
         # Indicate that there is no timestamp, so the caller can use a default.
@@ -218,38 +221,41 @@ def get_mtime(last_export_filename):
 def update_mtime(last_export_filename, mtime):
     """Updates the atime & mtime on the export timestamp file.
 
-  Args:
-    last_export_filename: str, absolute path to last export time stamp file.
-    mtime: int, timestamp in seconds since epoch; used for file atime & mtime.
-  Raises:
-    OSError, if last_export_filename mtime cannot be updated.
-  """
+    Args:
+      last_export_filename: str, absolute path to last export time stamp file.
+      mtime: int, timestamp in seconds since epoch; used for file atime & mtime.
+
+    Raises:
+      OSError, if last_export_filename mtime cannot be updated.
+    """
     os.utime(last_export_filename, (mtime, mtime))
 
 
 def align_timestamp(timestamp, step):
     """Adjusts 'timestamp' down to a multiple of 'step' size.
 
-  Args:
-    timestamp: int, timestamp in seconds since the epoch.
-    step: int, interval to align.
-  Returns:
-    int, timestamp adjusted to multiple of step.
-  """
+    Args:
+      timestamp: int, timestamp in seconds since the epoch.
+      step: int, interval to align.
+
+    Returns:
+      int, timestamp adjusted to multiple of step.
+    """
     return timestamp - (timestamp % step)
 
 
 def default_start_time(options, ts_previous):
     """Calculates a default start timestamp.
 
-  Args:
-    options: flags.FlagValues, the runtime options. These values are read:
-        options.length, options.step, options.update, options.ts_offset.
-    ts_previous: int, timestamp in seconds since epoch of last
-        successful export. On first run, this value should be zero.
-  Returns:
-    int, timestamp in seconds since the epoch.
-  """
+    Args:
+      options: flags.FlagValues, the runtime options. These values are read:
+          options.length, options.step, options.update, options.ts_offset.
+      ts_previous: int, timestamp in seconds since epoch of last
+          successful export. On first run, this value should be zero.
+
+    Returns:
+      int, timestamp in seconds since the epoch.
+    """
     if ts_previous:
         # Typical: start from the end time of previous runs.
         return align_timestamp(ts_previous, options.step)
@@ -271,27 +277,28 @@ def default_start_time(options, ts_previous):
 def default_end_time(step):
     """Calculates a default end timestamp aligned to step based on current time.
 
-  Args:
-    step: int, interval to align end time.
+    Args:
+      step: int, interval to align end time.
 
-  Returns:
-    int, timestamp in seconds since the epoch.
-  """
+    Returns:
+      int, timestamp in seconds since the epoch.
+    """
     return align_timestamp(int(time.time()), step)
 
 
 def assert_start_and_end_times(options):
     """Performs a sanity check on start and end timestamps.
 
-  This method asserts that both ts_end is less than ts_start and that the
-  difference between them is greater than options.length.
+    This method asserts that both ts_end is less than ts_start and that the
+    difference between them is greater than options.length.
 
-  Args:
-    options: flags.FlagValues, the runtime options. These values are read:
-        options.length, options.ts_start, options.ts_end.
-  Raises:
-    TimeOptionError, if a start & end time constraint is violated.
-  """
+    Args:
+      options: flags.FlagValues, the runtime options. These values are read:
+          options.length, options.ts_start, options.ts_end.
+
+    Raises:
+      TimeOptionError, if a start & end time constraint is violated.
+    """
     # Always check if basic constratins are respected.
     if options.ts_end <= options.ts_start:
         raise TimeOptionError('Start time must precede end time.')
@@ -311,20 +318,21 @@ def assert_start_and_end_times(options):
 def default_output_name(ts_start, ts_end, output_dir):
     """Creates a default output filename based on time range and output dir.
 
-  Filenames are formatted with time stamps as:
-      <output_dir>/utilization/YYYY/MM/DD/<HOSTNAME>/
-          <ts_start>-to-<ts_end>-metrics.json
+    Filenames are formatted with time stamps as:
+        <output_dir>/utilization/YYYY/MM/DD/<HOSTNAME>/
+            <ts_start>-to-<ts_end>-metrics.json
 
-  The YYYY, MM, DD in the path are taken from ts_start.
-  Both <ts_start> and <ts_end> are formatted as: YYYYMMDDTHHMMSS
+    The YYYY, MM, DD in the path are taken from ts_start.
+    Both <ts_start> and <ts_end> are formatted as: YYYYMMDDTHHMMSS
 
-  Args:
-    ts_start: int, starting timestamp of export in seconds since the epoch.
-    ts_end: int, ending timestamp of export in seconds since the epoch.
-    output_dir: str, base path of directory for output.
-  Returns:
-    str, absolute path of generated output file name.
-  """
+    Args:
+      ts_start: int, starting timestamp of export in seconds since the epoch.
+      ts_end: int, ending timestamp of export in seconds since the epoch.
+      output_dir: str, base path of directory for output.
+
+    Returns:
+      str, absolute path of generated output file name.
+    """
     filename = '%s-to-%s-metrics.json' % (
         time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_start)),
         time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_end)))
@@ -336,11 +344,12 @@ def default_output_name(ts_start, ts_end, output_dir):
 def make_output_dirs(output_name):
     """Creates directory path to filename, if it does not exist.
 
-  Args:
-    output_name: str, absolute path of an output file.
-  Raises:
-    OSError, if directory cannot be created.
-  """
+    Args:
+      output_name: str, absolute path of an output file.
+
+    Raises:
+      OSError, if directory cannot be created.
+    """
     dir_name = os.path.dirname(output_name)
     if dir_name and not os.path.exists(dir_name):
         os.makedirs(dir_name)
@@ -349,14 +358,15 @@ def make_output_dirs(output_name):
 def get_canonical_names(filename, value_name, options):
     """Converts raw filename and value names from RRD into canonical export names.
 
-  Args:
-    filename: str, the absolute path of an rrd file.
-    value_name: str, the name of the value being exported from the RRD.
-    options: flags.FlagValues, the runtime options. This method uses
-        options.rrddir_prefix and all option.show_* flags.
-  Returns:
-    (str, str, str), with HOSTNAME, experiment name, metric name.
-  """
+    Args:
+      filename: str, the absolute path of an rrd file.
+      value_name: str, the name of the value being exported from the RRD.
+      options: flags.FlagValues, the runtime options. This method uses
+          options.rrddir_prefix and all option.show_* flags.
+
+    Returns:
+      (str, str, str), with HOSTNAME, experiment name, metric name.
+    """
     # Strip rrddir_prefix, remove rrd extension, and split directory components.
     short_filename = filename.replace(options.rrddir_prefix, '', 1)
     short_filename, _ = os.path.splitext(short_filename)
@@ -400,15 +410,16 @@ def get_canonical_names(filename, value_name, options):
 def get_json_record(hostname, experiment, metric, timestamps, values):
     """Creates a dict suitable for export to json.
 
-  Args:
-    hostname, str, hostname of host system.
-    experiment: str, name of experiment running on host.
-    metric: str, the canonical metric name for values.
-    timestamps: iterable of int, timestamps corresponding to each value.
-    values: iterable of float, values corresponding to each timestamp.
-  Returns:
-    dict, with keys for hostname, experiment, metric, and sample.
-  """
+    Args:
+      hostname: str, hostname of host system.
+      experiment: str, name of experiment running on host.
+      metric: str, the canonical metric name for values.
+      timestamps: iterable of int, timestamps corresponding to each value.
+      values: iterable of float, values corresponding to each timestamp.
+
+    Returns:
+      dict, with keys for hostname, experiment, metric, and sample.
+    """
     logging.debug('%s %s %s', hostname, experiment, metric)
     json_data = {
         'hostname': hostname,
@@ -422,14 +433,15 @@ def get_json_record(hostname, experiment, metric, timestamps, values):
 def get_json_record_samples(timestamps, values):
     """Converts a sequences of timestampes and values for a json record.
 
-  The timestamps and values arguments must be the same length.
+    The timestamps and values arguments must be the same length.
 
-  Args:
-    timestamps: iterable of int, timestamps corresponding to each value.
-    values: iterable of float, values corresponding to each timestamp.
-  Returns:
-    list of dict, each dict has keys timestamp and value.
-  """
+    Args:
+      timestamps: iterable of int, timestamps corresponding to each value.
+      values: iterable of float, values corresponding to each timestamp.
+
+    Returns:
+      list of dict, each dict has keys timestamp and value.
+    """
     samples = []
     assert (len(timestamps) == len(values))
     for i in xrange(len(timestamps)):
@@ -441,11 +453,11 @@ def get_json_record_samples(timestamps, values):
 def write_json_record(fd_output, record, pretty_json):
     """Writes json record to fd_output.
 
-  Args:
-    fd_output: file object open for writing, the record is written to this fd.
-    record: dict, the record of data to serialize as json.
-    pretty_json: bool, whether to write the json with extra spacing.
-  """
+    Args:
+      fd_output: file object open for writing, the record is written to this fd.
+      record: dict, the record of data to serialize as json.
+      pretty_json: bool, whether to write the json with extra spacing.
+    """
     json.dump(record, fd_output, indent=pretty_json)
     fd_output.write('\n')  # separate each record with newline.
 
@@ -453,11 +465,12 @@ def write_json_record(fd_output, record, pretty_json):
 def get_rrd_files(rrddir_prefix):
     """Returns the absolute path of all rrd files found under rrddir_prefix.
 
-  Args:
-    rrddir_prefix: str, base directory where rrd files are stored.
-  Returns:
-    list of str, where each element is the absolute path to a single rrd file.
-  """
+    Args:
+      rrddir_prefix: str, base directory where rrd files are stored.
+
+    Returns:
+      list of str, where each element is the absolute path to a single rrd file.
+    """
     rrdfiles = []
     for root, _, filenames in os.walk(rrddir_prefix):
         for filename in filenames:
@@ -480,10 +493,10 @@ def rrd_list(options):
 def rrd_export(options):
     """Exports all RRD data.
 
-  Raises:
-    OSError, if output directory cannot be created.
-    IOError, if output file cannot be created or written.
-  """
+    Raises:
+      OSError, if output directory cannot be created.
+      IOError, if output file cannot be created or written.
+    """
     open_func = open
     if options.compress:
         open_func = gzip.open
@@ -516,18 +529,19 @@ def rrd_export(options):
 def read_metric_map(filename):
     """Reads content of metric name conversion configuration file.
 
-  The format of filename should be supported by python ConfigParser. The file
-  must contain at least one section named 'metrics'.
+    The format of filename should be supported by python ConfigParser. The file
+    must contain at least one section named 'metrics'.
 
-  Example:
-    [metrics]
-    raw_metric.name:  canonical_metric.name
+    Example:
+      [metrics]
+      raw_metric.name:  canonical_metric.name
 
-  Returns:
-    dict, keys are raw metric names, values are canonical metric names.
-  Exits:
-    When filename is missing, has bad configuration, or is missing metrics section.
-  """
+    Returns:
+      dict, keys are raw metric names, values are canonical metric names.
+
+    Exits:
+      When filename is missing, has bad configuration, or is missing metrics section.
+    """
 
     # ConfigParser.read ignores non-existent files, so check that the file exists.
     if not os.path.exists(filename):
@@ -560,12 +574,13 @@ def any_show_options(options):
 def init_args(options, ts_previous):
     """Initializes flags with default values and asserts sanity checks.
 
-  Args:
-    options: flags.FlagValues, the unprocessed defaults from flags.FLAGS.
-    ts_previous: int, timestamp in seconds since epoch of last export.
-  Returns:
-    flags.FlagValues, options with updated defaults.
-  """
+    Args:
+      options: flags.FlagValues, the unprocessed defaults from flags.FLAGS.
+      ts_previous: int, timestamp in seconds since epoch of last export.
+
+    Returns:
+      flags.FlagValues, options with updated defaults.
+    """
     global METRIC_MAP
     METRIC_MAP = read_metric_map(options.export_metrics)
 
@@ -598,15 +613,16 @@ def init_args(options, ts_previous):
 def parse_args(ts_previous):
     """Parses command line arguments and initialize defaults.
 
-  Args:
-    ts_previous: int, timestamp in seconds since epoch of last successful
-        export. On first run, this value should be zero.
-  Returns:
-    flags.FlagValues, all options.
-  """
+    Args:
+      ts_previous: int, timestamp in seconds since epoch of last successful
+          export. On first run, this value should be zero.
+
+    Returns:
+      flags.FlagValues, all options.
+    """
     try:
-        _ = flags.FLAGS(
-            sys.argv)  # Parses flags. Any remaining args are unused.
+        # Parses flags. Any remaining args are unused.
+        flags.FLAGS(sys.argv)
     except flags.FlagsError, err:
         logging.error('%s\nUsage: %s ARGS\n%s', err, sys.argv[0], flags.FLAGS)
         sys.exit(1)
@@ -627,7 +643,8 @@ def main():
                 rrd_list(options)
             else:
                 rrd_export(options)
-                # Update last_export mtime only after everything completes successfully.
+                # Update last_export mtime only after everything completes
+                # successfully.
                 if options.update:
                     update_mtime(LAST_EXPORT_FILENAME, options.ts_end)
 

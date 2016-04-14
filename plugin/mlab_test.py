@@ -37,7 +37,7 @@ logging.basicConfig(format='%(relativeCreated)d - %(threadName)s - %(message)s',
 
 class MockCollectd(mock.Mock):
     """A mock to replace the collectd module for the mlab plugin.
-  
+
   The collectd module provides three methods for reporting to syslog. Adding
   these methods to the mock permits more verbose output during tests when
   mlab_test._DEBUG is True.
@@ -82,12 +82,12 @@ class FakeValues(object):
 
       self.assertEqual(metrics.get('<expected-metric-key>'), expected_value)
       # ... additional asserts ...
-      
+
   The test begins by calling FakeValues.setup(). Because the mlab plugin
   creates a new collectd.Value for each metric reported, and because we want to
   record each value for verification after testing, FakeValues saves each
   dispatched value in a class attribute (which is the same for all instances of
-  the class). FakeValues.setup clears this class attribute at the start of a 
+  the class). FakeValues.setup clears this class attribute at the start of a
   new test.
 
   After running the method_under_test, all metrics dispatched by that method
@@ -154,7 +154,7 @@ class FakeVsysBackend(object):
     2. frontend opens target.in for writing (blocking or non-blocking).
     3. frontend opens target.out for reading, blocks.
     4. backend opens target.out for writing, blocks.
-  
+
   FakeVsysBackend allows the caller to set up controlled request and response
   messages to test a frontend end to end. As well, if any file descriptor is
   unexpectedly closed or the backend misbehaves, different failures can occur.
@@ -177,43 +177,43 @@ class FakeVsysBackend(object):
   == Fault Injection ==
 
   Command: shutdown_reader
-  
+
     The shutdown_reader command closes the backend read file descriptor so
     that future frontend writes will fail (path 1 & 2 above). Caller should
     expect 'vsys.sendrecv' to return successfully, and for the next call to
     vsys.sendrecv to fail. To clean up after this command, the caller MUST call
     shutdown, or the backend thread will not exit properly, and the backend
     write file descriptor will not be closed which could affect future tests.
-  
+
     Example:
       _ = vsys.sendrecv('shutdown_reader')
       self.assertRaises(mlab.VsysException, vsys.sendrecv, 'any_request')
       backend.shutdown()
-  
+
   Command: shutdown_writer
-  
+
     The shutdown_writer command closes the backend write file descriptor, so
     no response is written (or received by vsys.sendrecv). Also, as a result,
     any other thread with a corresponding open read file descriptor will
-    receive EOF and exit (path 3 & 4 above). Because the vsys frontend reads 
+    receive EOF and exit (path 3 & 4 above). Because the vsys frontend reads
     data using a timeout, it will either observe that the backend reader has
     died (EOF), or timeout waiting. In either case, it will raise an exception.
-  
+
     Example:
       self.assertRaises(mlab.VsysException, vsys.sendrecv, 'shutdown_writer', 1)
 
   Command: send_empty_reply
-  
+
     The send_empty_reply command behaves as a normal command, except that it
     returns an empty value in the response message. This simulates a response
     from a backend command being empty.
-  
+
     Example:
       response = vsys.sendrecv('send_empty_reply')
       assert(response == '')
-  
+
   Command: take_too_long
-  
+
     The take_too_long command waits indefinitely before returning a reply.
     This is helpful for verifying vsys.sendrecv timeout behavior. This command
     simulates a situation where the backend has stopped responding as quickly
@@ -340,29 +340,7 @@ class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
 
     @mock.patch('os.open')
     def testunit_open_RAISES_OSError(self, mock_open):
-
-        def side_effect(*unused_args):
-            """Manages a two-step return value."""
-
-            # Hi! welcome to an old version of the mock module. In this old version,
-            # side_effect behavior is managed manually. For this test the second call
-            # to os.open should raise an OSError. So, on the first call we reset the
-            # side_effect reference to 'second_call' which raises the exception we
-            # need the second time os.open is called.
-            #
-            # More recent versions of mock allow side_effect to be an array, and
-            # automatically raises objects of type Exception.
-            # 
-            # If mock is updated, this will keep working, but a better approach is:
-            #     mock_open.side_effect = [3, OSError(-1, 'Forced OS error')]
-            def second_call(*unused_args):
-                """Raises OSError."""
-                raise OSError(-1, 'Forced OS error')
-
-            mock_open.side_effect = second_call
-            return 3  # Any integer like a file descriptor from os.open.
-
-        mock_open.side_effect = side_effect
+        mock_open.side_effect = [3, OSError(-1, 'Forced OS error')]
         (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
         expected_calls = [mock.call(fifo_in, os.O_WRONLY),
                           mock.call(fifo_out, os.O_RDONLY)]
@@ -434,7 +412,7 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
 
         vsys = mlab.VsysFrontend('mock_target', open_nonblock=False)
         vsys.open()
-        _ = vsys.sendrecv('shutdown_reader')
+        vsys.sendrecv('shutdown_reader')
         self.assertRaises(mlab.VsysException, vsys.sendrecv, 'fake_request')
 
         vsys.close()

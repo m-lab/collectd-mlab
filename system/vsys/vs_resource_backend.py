@@ -12,8 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-The vs_resource_backend is the vsys backend for collectd-mlab plugin.
+"""The vs_resource_backend is the vsys backend for collectd-mlab plugin.
 
 The collectd-mlab plugin runs in a vserver context, and the vs_resource_backend
 runs in the host context of an M-Lab server. This script is needed to provide
@@ -106,9 +105,9 @@ class vc_ctx_dlimit(ctypes.Structure):
 def init_libvserver():
     """Loads the libvserver library into the global _LIBVSERVER.
 
-  Returns:
-     True on success, False on failure.
-  """
+    Returns:
+       True on success, False on failure.
+    """
     global _LIBVSERVER
     lib = ctypes.util.find_library('vserver')
     if lib is None:
@@ -127,14 +126,15 @@ def init_libvserver():
 def vc_get_dlimit(filename, xid):
     """Calls libvserver.vc_get_dlimit to get dlimit values for xid.
 
-  Dlimits are applied to a specific directory path.
-  
-  Args:
-    filename: str, path to slice root dir, where quota limits are applied.
-    xid: int, xid of vserver.
-  Returns:
-    list of int, [space_used, space_total, inodes_used, inodes_total, reserved]
-  """
+    Dlimits are applied to a specific directory path.
+
+    Args:
+      filename: str, path to slice root dir, where quota limits are applied.
+      xid: int, xid of vserver.
+
+    Returns:
+      list of int, [space_used, space_total, inodes_used, inodes_total, reserved]
+    """
     if _LIBVSERVER is None:
         if not init_libvserver():
             raise LibVserverError('Failed to initialize libvserver.')
@@ -169,11 +169,12 @@ def syslog_err(msg):
 def get_vserver_xids(vs_prefix_dir):
     """Lists all vserver xids found in the vs_prefix_dir directory.
 
-  Args:
-    vs_prefix_dir: str, path to the root of vserver /proc directory.
-  Returns:
-    list of int, where each int is an xid found in vs_prefix_dir.
-  """
+    Args:
+      vs_prefix_dir: str, path to the root of vserver /proc directory.
+
+    Returns:
+      list of int, where each int is an xid found in vs_prefix_dir.
+    """
     xids = []
     for entry in os.listdir(vs_prefix_dir):
         entry_path = os.path.join(vs_prefix_dir, entry)
@@ -191,9 +192,9 @@ def get_vserver_xids(vs_prefix_dir):
 def get_xid_names():
     """Fulfills the vs_xid_names request.
 
-  Returns:
-    dict, keys are vserver xids as string, values are vserver names as string.
-  """
+    Returns:
+      dict, keys are vserver xids as string, values are vserver names as string.
+    """
     xid_names = {}
 
     for xid in get_vserver_xids(_VS_PREFIX_DIR):
@@ -218,9 +219,9 @@ def get_xid_names():
 def get_xid_dlimits():
     """Fulfills the vs_xid_dlimits request.
 
-  Returns:
-    dict, keys are xids as string, values are 5-element lists with dlimits.
-  """
+    Returns:
+      dict, keys are xids as string, values are 5-element lists with dlimits.
+    """
     xid_dlimits = {}
 
     for xid in get_vserver_xids(_VS_PREFIX_DIR):
@@ -239,15 +240,15 @@ def get_xid_dlimits():
 def get_backend_stats(stat_path):
     """Fulfills the backend_stats request.
 
-  Returns:
-    dict, with process time and memory usage stats. Keys include:
-        utime: float, cumulative time scheduled in user mode, in hundredths of a
-            second.
-        stime: float, cumulative time scheduled in kernel mode, in hundredths of
-            a second.
-        vsize: int, virtual memory size, bytes,
-        rss: int, resident set size, bytes.
-  """
+    Returns:
+      dict, with process time and memory usage stats. Keys include:
+          utime: float, cumulative time scheduled in user mode, in hundredths of a
+              second.
+          stime: float, cumulative time scheduled in kernel mode, in hundredths of
+              a second.
+          vsize: int, virtual memory size, bytes,
+          rss: int, resident set size, bytes.
+    """
     index_utime = 13
     index_stime = 14
     index_cutime = 15

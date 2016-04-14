@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Summary:
+
   check_collectd_mlab.py is a nagios plugin that checks the health of
   collectd-mlab.
 
@@ -164,24 +165,27 @@ class TimeoutError(Exception):
 def _mb_to_bytes(size_mb):
     """Converts size_mb to a collectd-nagios range in bytes.
 
-  Args:
-    size_mb: int, a size in megabytes (not mebibytes).
-  Returns:
-    str, a nagios range, e.g. 0:1000000
-  """
+    Args:
+      size_mb: int, a size in megabytes (not mebibytes).
+
+    Returns:
+      str, a nagios range, e.g. 0:1000000
+    """
     return '0:%s' % (size_mb * 1000 * 1000)
 
 
 def sock_connect(path):
     """Creates a unix domain, stream socket and connects to path.
 
-  Args:
-    path: str, absolute path to unix socket name.
-  Returns:
-    AF_UNIX socket.socket of type SOCK_STREAM.
-  Raises:
-    CriticalError, if socket connection fails.
-  """
+    Args:
+      path: str, absolute path to unix socket name.
+
+    Returns:
+      AF_UNIX socket.socket of type SOCK_STREAM.
+
+    Raises:
+      CriticalError, if socket connection fails.
+    """
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.connect(path)
@@ -195,18 +199,20 @@ def sock_connect(path):
 def sock_sendcmd(sock, command):
     """Writes command to collectd UnixSock socket.
 
-  For more information, see also the collectd UnixSock socket protocol:
-    https://collectd.org/wiki/index.php/Plain_text_protocol
+    For more information, see also the collectd UnixSock socket protocol:
+      https://collectd.org/wiki/index.php/Plain_text_protocol
 
-  Args:
-    sock: socket.socket, connected unix domain socket.
-    command: str, the command to send over socket.
-  Returns:
-    int, the status code returned by collectd. The value is positive on
-        success, less than or equal to zero on error.
-  Raises:
-    CriticalError, if socket send fails.
-  """
+    Args:
+      sock: socket.socket, connected unix domain socket.
+      command: str, the command to send over socket.
+
+    Returns:
+      int, the status code returned by collectd. The value is positive on
+          success, less than or equal to zero on error.
+
+    Raises:
+      CriticalError, if socket send fails.
+    """
     try:
         sock.send(command + '\n')
     except socket.error as err:
@@ -223,13 +229,15 @@ def sock_sendcmd(sock, command):
 def sock_readline(sock):
     """Reads one line from sock, until first newline character.
 
-  Args:
-     sock: socket.socket, to read line from this socket.
-  Returns:
-     str, the line read, or empty string on error.
-  Raises:
-    CriticalError, if socket read fails.
-  """
+    Args:
+       sock: socket.socket, to read line from this socket.
+
+    Returns:
+       str, the line read, or empty string on error.
+
+    Raises:
+      CriticalError, if socket read fails.
+    """
     try:
         buf = []
         data = sock.recv(1)
@@ -245,9 +253,9 @@ def sock_readline(sock):
 def assert_collectd_installed():
     """Asserts that collectd is installed in the utility slice.
 
-  Raises:
-    CriticalError, if an error occurs.
-  """
+    Raises:
+      CriticalError, if an error occurs.
+    """
     # Is collectd installed?
     if not os.path.exists(COLLECTD_BIN):
         raise MissingBinaryError('collectd binary not present: %s.',
@@ -267,9 +275,9 @@ def assert_collectd_installed():
 def assert_collectd_responds():
     """Asserts that collectd is responding over the COLLECTD_UNIXSOCK.
 
-  Raises:
-    CriticalError if an error occurs.
-  """
+    Raises:
+      CriticalError if an error occurs.
+    """
     # Is filesystem read-write ok?
     if not os.access(COLLECTD_PID, os.W_OK):
         raise ReadonlyFilesystemError('collectd filesystem is read only!')
@@ -293,9 +301,9 @@ def assert_collectd_responds():
 def assert_collectd_vsys_setup():
     """Asserts that vsys configuration is complete for mlab_utility.
 
-  Raises:
-    CriticalError if an error occurs.
-  """
+    Raises:
+      CriticalError if an error occurs.
+    """
     # Is the vsys backend script installed?
     if not os.path.exists(VSYSPATH_BACKEND):
         raise MissingVsysBackendError('The vsys backend script %s is missing!',
@@ -321,19 +329,20 @@ def assert_collectd_vsys_setup():
 def run_collectd_nagios(host, metric, value, warning, critical):
     """Runs collectd-nagios using given parameters as arguments.
 
-  Please see the collectd-nagios man page for documentation on the format of
-  'warning' and 'critical' thresholds.
+    Please see the collectd-nagios man page for documentation on the format of
+    'warning' and 'critical' thresholds.
 
-  Args:
-    host: str, experiment hostname.
-    metric: str, raw metric path. (e.g. network/if_octets-ipv6)
-    value: str, name of value within metric. (e.g. 'value', 'rx')
-    warning: str, a collectd-nagios warning threshold. (e.g. '0:20')
-    critical: str, a collectd-nagios critical threshold. (e.g. '0:30')
-  Returns:
-    int, exit code from collectd-nagios. Because this is a nagios plugin, these
-        are valid nagios exit states.
-  """
+    Args:
+      host: str, experiment hostname.
+      metric: str, raw metric path. (e.g. network/if_octets-ipv6)
+      value: str, name of value within metric. (e.g. 'value', 'rx')
+      warning: str, a collectd-nagios warning threshold. (e.g. '0:20')
+      critical: str, a collectd-nagios critical threshold. (e.g. '0:30')
+
+    Returns:
+      int, exit code from collectd-nagios. Because this is a nagios plugin, these
+          are valid nagios exit states.
+    """
     env = os.environ.copy()
     env['LD_LIBRARY_PATH'] = '%s:%s' % (LD_LIBRARY_PATH,
                                         env.get('LD_LIBRARY_PATH', ''))
@@ -356,12 +365,12 @@ def run_collectd_nagios(host, metric, value, warning, critical):
 def assert_collectd_nagios_levels():
     """Asserts actual values from collectd using collectd-nagios.
 
-  Asserts that storage quota is sufficient, metric collection is fast enough,
-  that CPU load is low, and memory usage is reasonable.
+    Asserts that storage quota is sufficient, metric collection is fast enough,
+    that CPU load is low, and memory usage is reasonable.
 
-  Raises:
-    NagiosStateError, if an error occurs.
-  """
+    Raises:
+      NagiosStateError, if an error occurs.
+    """
     # TODO: Make warning & critical thresholds configurable.
 
     # Is utility slice quota ok?
@@ -402,10 +411,10 @@ def assert_disk_last_sync_time():
 
 def check_collectd():
     """Checks environment for signs of normal collectd-mlab behavior.
-  
-  Returns:
-    Tuple of (int, str), corresponding to the (nagios_state, error_message).
-  """
+
+    Returns:
+      Tuple of (int, str), corresponding to the (nagios_state, error_message).
+    """
     t_start = time.time()
 
     # Check all critical conditions first.
@@ -445,7 +454,7 @@ class AlarmAfterTimeout(object):
         signal.signal(signal.SIGALRM, handler)
         signal.alarm(self._timeout)
 
-    def __exit__(self, *unused_args):
+    def __exit__(self, *args):
         """Cancels pending alarm."""
         signal.alarm(0)
 
