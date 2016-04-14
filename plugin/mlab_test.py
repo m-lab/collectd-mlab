@@ -340,29 +340,7 @@ class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
 
     @mock.patch('os.open')
     def testunit_open_RAISES_OSError(self, mock_open):
-
-        def side_effect(*args):
-            """Manages a two-step return value."""
-
-            # Hi! welcome to an old version of the mock module. In this old version,
-            # side_effect behavior is managed manually. For this test the second call
-            # to os.open should raise an OSError. So, on the first call we reset the
-            # side_effect reference to 'second_call' which raises the exception we
-            # need the second time os.open is called.
-            #
-            # More recent versions of mock allow side_effect to be an array, and
-            # automatically raises objects of type Exception.
-            #
-            # If mock is updated, this will keep working, but a better approach is:
-            #     mock_open.side_effect = [3, OSError(-1, 'Forced OS error')]
-            def second_call(*args):
-                """Raises OSError."""
-                raise OSError(-1, 'Forced OS error')
-
-            mock_open.side_effect = second_call
-            return 3  # Any integer like a file descriptor from os.open.
-
-        mock_open.side_effect = side_effect
+        mock_open.side_effect = [3, OSError(-1, 'Forced OS error')]
         (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
         expected_calls = [mock.call(fifo_in, os.O_WRONLY),
                           mock.call(fifo_out, os.O_RDONLY)]
