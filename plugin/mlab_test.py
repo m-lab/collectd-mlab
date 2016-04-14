@@ -335,8 +335,10 @@ class MlabCollectdPlugin_VsysFrontendWithoutBackendTests(unittest.TestCase):
         (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
         if not os.path.exists(fifo_in):
             os.mkfifo(fifo_in)
+            self.addCleanup(os.remove, fifo_in)
         if not os.path.exists(fifo_out):
             os.mkfifo(fifo_out)
+            self.addCleanup(os.remove, fifo_out)
 
     @mock.patch('os.open')
     def testunit_open_RAISES_OSError(self, mock_open):
@@ -369,8 +371,10 @@ class MlabCollectdPlugin_VsysFrontendTests(unittest.TestCase):
         (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
         if not os.path.exists(fifo_in):
             os.mkfifo(fifo_in)
+            self.addCleanup(os.remove, fifo_in)
         if not os.path.exists(fifo_out):
             os.mkfifo(fifo_out)
+            self.addCleanup(os.remove, fifo_out)
         self.backend = FakeVsysBackend('mock_target')
         self.backend.start()
 
@@ -891,8 +895,10 @@ class MlabCollectdPlugin_IntegrationTests(unittest.TestCase):
         (fifo_in, fifo_out) = mlab.get_vsys_fifo_names('mock_target')
         if not os.path.exists(fifo_in):
             os.mkfifo(fifo_in)
+            self.addCleanup(os.remove, fifo_in)
         if not os.path.exists(fifo_out):
             os.mkfifo(fifo_out)
+            self.addCleanup(os.remove, fifo_out)
         FakeValues.setup()
 
     def tearDown(self):
