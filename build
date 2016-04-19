@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -x
+
+# TODO(soltesz): update sources to support auto-discovery of tests.
+
+# Run unit tests and calculate code coverage.
+rm -f .coverage &&
+for dir in export monitoring plugin site-packages system/vsys viewer ; do
+  coverage run --append --source ./ \
+      --omit third_party/docstringchecker/*.py \
+      -m unittest discover -s ${dir} -p '*_test.py'
+done &&
+
+# Check that source has correct formatting.
+yapf --diff --recursive --style google ./ --exclude=./third_party/* &&
+
+# Run static analysis for Python bugs/cruft.
+pyflakes . &&
+
+# Run the docstring lint checker.
+PYTHONPATH=$PYTHONPATH:$PWD/third_party/docstringchecker pylint \
+    --reports=n plugin/*.py export/*.py monitoring/*.py system/vsys/*.py \
+	site-packages/mlab/disco/*.py viewer/*.py
