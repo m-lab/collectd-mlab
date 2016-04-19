@@ -20,10 +20,11 @@ script:
     - python -m unittest discover -s monitoring/ -p '*_test.py'
     - python -m unittest discover -s plugin/ -p '*_test.py'
     - python -m unittest discover -s system/vsys/ -p '*_test.py'
+    - python -m unittest discover -s site-packages/ -p '*_test.py'
     # Run auto formatter.
     - yapf --diff --recursive --style google ./ --exclude=./third_party/*
     # Run static analysis for Python bugs/cruft.
     - pyflakes ./
     # Run the docstring lint checker.
-    - PYTHONPATH=$PYTHONPATH:$PWD/third_party/docstringchecker pylint --reports=n plugin/*.py export/*.py monitoring/*.py system/vsys/*.py
+    - PYTHONPATH=$PYTHONPATH:$PWD/third_party/docstringchecker pylint --reports=n plugin/*.py export/*.py monitoring/*.py system/vsys/*.py site-packages/mlab/disco/*.py
 sudo: false
