@@ -15,7 +15,8 @@ install:
     - pip install yapf==0.7.0
     - pip install pylint==1.5.5
 script:
-    ./build
+    # See fake-packages/README.md for background on why we need fake-packages.
+    - PYTHONPATH=$PYTHONPATH:$PWD/fake-packages ./build
 after_success:
     - coveralls
 sudo: false
