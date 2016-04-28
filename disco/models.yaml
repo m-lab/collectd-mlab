@@ -1,0 +1,110 @@
+!config
+# Switch model and OID configuration for collecting switch traffic.
+#
+# This configuration should contain two top level nodes for 'models' and
+# 'default_oids'.
+
+# Model configuration.
+#
+# Each model has a canonical 'name' of a switch model and should contain two
+# subvalues: 'pattern' and 'qbridge'. The 'pattern' value should be a substring
+# that is uniquely present in the sysDescr.0 OID; this is how models are
+# identified. The 'qbridge' value should be True for switches that support the
+# Q-BRIDGE MIB, and False otherwise.
+#
+# A model may contain two additional subvalues: 'vlan' and 'oids'. The 'vlan'
+# value should be True for switches that require vlan discovery (i.e. Cisco).
+# The 'oids' optionally declare model-specific OIDs. Models inherit the
+# 'default_oids' configuration (defined below) and 'oids' defined here override
+# the corresponding default OIDs.
+
+# Switch models.
+models:
+    # HP ProCurve 28xx series.
+    - !model
+      name: procurve
+      pattern: ProCurve
+      qbridge: true
+      vlan: false
+
+    # Juniper QFX.
+    - !model
+      name: qfx
+      pattern: qfx
+      qbridge: true
+      vlan: false
+      oids:
+          discards:
+              !oid
+              rx: RFC1213-MIB::ifInDiscards.{ifIndex}
+              # The Juniper QFX switch uses standard OIDs for monitoring except
+              # for a 64-bit, vendor MIB for output discards. The symbolic MIB
+              # is unknown to the library used by collectd-snmp, so use dot
+              # notation. Symbolic:
+              # JUNIPER-COS-MIB::jnxCosQstatTotalDropPkts.${jnxCosQstatIfIndex}.0
+              tx: .1.3.6.1.4.1.2636.3.15.4.1.53.{ifIndex}.0
+
+    # All known Cisco models.
+    - !model
+      name: cisco
+      pattern: Cisco
+      qbridge: false
+      vlan: true
+
+# OID configuration.
+#
+# All switch models will use the 'default_oids' configuration below, unless
+# they define some model-specific 'oids' in the model declaration above. The
+# 'default_oids' value is a mapping from short names (e.g. 'octets') to 'oid'
+# types. Every OID should contain two values: 'rx' and 'tx'. These are a pair
+# of OID *format strings* that represent the in-bound (receiving) and
+# out-bound (transmitting) counters for an interface. When formatting the 'rx'
+# and 'tx' values, the '{ifIndex}' is replaced with the corresponding switch
+# port interface index number. For example:
+#
+#     octets.rx: IF-MIB::ifHCInOctets.{ifIndex}
+#     octets.tx: IF-MIB::ifHCOutOctets.{ifIndex}
+#
+# Might become:
+#
+#     octets.rx: IF-MIB::ifHCInOctets.10
+#     octets.tx: IF-MIB::ifHCOutOctets.10
+#
+# Symbolic OID names must be recognized by the collectd-snmp plugin. Numeric
+# OIDs will always work.
+
+# Default OID configuration for switch traffic utilization.
+default_oids:
+    # 64-bit eXtended counters.  See also: IfXEntry
+    # http://www.ietf.org/rfc/rfc1573.txt
+    octets:
+        !oid
+        rx: IF-MIB::ifHCInOctets.{ifIndex}
+        tx: IF-MIB::ifHCOutOctets.{ifIndex}
+
+    unicast:
+        !oid
+        rx: IF-MIB::ifHCInUcastPkts.{ifIndex}
+        tx: IF-MIB::ifHCOutUcastPkts.{ifIndex}
+
+    multicast:
+        !oid
+        rx: IF-MIB::ifHCInMulticastPkts.{ifIndex}
+        tx: IF-MIB::ifHCOutMulticastPkts.{ifIndex}
+
+    broadcast:
+        !oid
+        rx: IF-MIB::ifHCInBroadcastPkts.{ifIndex}
+        tx: IF-MIB::ifHCOutBroadcastPkts.{ifIndex}
+
+    # 32-bit counters.
+    # See also: IfEntry http://www.ietf.org/rfc/rfc1213.txt
+    discards:
+        !oid
+        rx: RFC1213-MIB::ifInDiscards.{ifIndex}
+        tx: RFC1213-MIB::ifOutDiscards.{ifIndex}
+
+    errors:
+        !oid
+        rx: RFC1213-MIB::ifInErrors.{ifIndex}
+        tx: RFC1213-MIB::ifOutErrors.{ifIndex}

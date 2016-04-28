@@ -1,2 +1,3 @@
 python-rrdtool
 python-gflags
+PyYAML
