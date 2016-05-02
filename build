@@ -6,10 +6,10 @@ set -x
 
 # Run unit tests and calculate code coverage.
 rm -f .coverage &&
-for dir in export monitoring plugin site-packages system/vsys viewer ; do
-  coverage run --append --source ./ \
+for dir in disco export monitoring plugin site-packages system/vsys viewer ; do
+  PYTHONPATH=$PYTHONPATH:$PWD/site-packages coverage run --append --source ./ \
       --omit third_party/docstringchecker/*.py \
-      -m unittest discover -s ${dir} -p '*_test.py'
+      -m unittest discover -s ${dir} -p '*_test.py' || exit 1
 done &&
 
 # Check that source has correct formatting.
@@ -20,5 +20,5 @@ pyflakes . &&
 
 # Run the docstring lint checker.
 PYTHONPATH=$PYTHONPATH:$PWD/third_party/docstringchecker pylint \
-    --reports=n plugin/*.py export/*.py monitoring/*.py system/vsys/*.py \
-	site-packages/mlab/disco/*.py viewer/*.py
+    --reports=n disco/*.py plugin/*.py export/*.py monitoring/*.py \
+	system/vsys/*.py site-packages/mlab/disco/*.py viewer/*.py
