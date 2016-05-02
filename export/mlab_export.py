@@ -150,6 +150,10 @@ flags.DEFINE_bool('update', True,
 flags.DEFINE_bool(
     'compress', False,
     'Compresses output and adds .gz extension to output filename.')
+flags.DEFINE_string('suffix', 'metrics',
+                    ('The suffix is appended to file names during export, e.g. '
+                     '*-<suffix>.json.gz, and the suffix is used as a section '
+                     'header in the "--export_metrics" configuration file.'))
 
 
 class Error(Exception):
@@ -315,12 +319,12 @@ def assert_start_and_end_times(options):
                   time.ctime(options.ts_end))
 
 
-def default_output_name(ts_start, ts_end, output_dir):
+def default_output_name(ts_start, ts_end, output_dir, rsync_name, suffix):
     """Creates a default output filename based on time range and output dir.
 
     Filenames are formatted with time stamps as:
-        <output_dir>/utilization/YYYY/MM/DD/<HOSTNAME>/
-            <ts_start>-to-<ts_end>-metrics.json
+        <output_dir>/<rsync_name>/YYYY/MM/DD/<HOSTNAME>/
+            <ts_start>-to-<ts_end>-<suffix>.json
 
     The YYYY, MM, DD in the path are taken from ts_start.
     Both <ts_start> and <ts_end> are formatted as: YYYYMMDDTHHMMSS
@@ -329,15 +333,18 @@ def default_output_name(ts_start, ts_end, output_dir):
       ts_start: int, starting timestamp of export in seconds since the epoch.
       ts_end: int, ending timestamp of export in seconds since the epoch.
       output_dir: str, base path of directory for output.
+      rsync_name: str, a directory path for the rsync dropbox.
+      suffix: str, the suffix to append to the end of a file name, e.g.
+          <ts_start>-to-<ts_end>-<suffix>.json
 
     Returns:
       str, absolute path of generated output file name.
     """
-    filename = '%s-to-%s-metrics.json' % (
+    filename = '%s-to-%s-%s.json' % (
         time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_start)),
-        time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_end)))
+        time.strftime('%Y%m%dT%H:%M:%S', time.gmtime(ts_end)), suffix)
     date_path = time.strftime('%Y/%m/%d', time.gmtime(ts_start))
-    full_path = os.path.join(output_dir, 'utilization', date_path, HOSTNAME)
+    full_path = os.path.join(output_dir, rsync_name, date_path, HOSTNAME)
     return os.path.join(full_path, filename)
 
 
@@ -526,24 +533,30 @@ def rrd_export(options):
                 write_json_record(fd_output, record, options.pretty_json)
 
 
-def read_metric_map(filename):
+def read_metric_map(filename, section):
     """Reads content of metric name conversion configuration file.
 
     The format of filename should be supported by python ConfigParser. The file
-    must contain at least one section named 'metrics'.
+    must contain at least one section named <section>.
 
     Example:
       [metrics]
       raw_metric.name:  canonical_metric.name
 
+    Args:
+      filename: str, the name of the metrics configuration.
+      section: str, the section name that defines the metric mapping.
+
     Returns:
       dict, keys are raw metric names, values are canonical metric names.
 
     Exits:
-      When filename is missing, has bad configuration, or is missing metrics section.
+      When filename is missing, has bad configuration, or is missing metrics
+          section.
     """
 
-    # ConfigParser.read ignores non-existent files, so check that the file exists.
+    # ConfigParser.read ignores non-existent files, so check that the file
+    # exists.
     if not os.path.exists(filename):
         logging.error('Config file does not exist: %s', filename)
         sys.exit(1)
@@ -556,10 +569,10 @@ def read_metric_map(filename):
         logging.error('Error while reading %s: %s', filename, err)
         sys.exit(1)
 
-    if parser.has_section('metrics'):
-        metric_map = dict(parser.items('metrics'))
+    if parser.has_section(section):
+        metric_map = dict(parser.items(section))
     else:
-        logging.error('Config file is missing "[metrics]" section')
+        logging.error('Config file is missing "[%s]" section' % section)
         sys.exit(1)
 
     return metric_map
@@ -582,7 +595,7 @@ def init_args(options, ts_previous):
       flags.FlagValues, options with updated defaults.
     """
     global METRIC_MAP
-    METRIC_MAP = read_metric_map(options.export_metrics)
+    METRIC_MAP = read_metric_map(options.export_metrics, options.suffix)
 
     if options.verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -604,8 +617,14 @@ def init_args(options, ts_previous):
     assert_start_and_end_times(options)
 
     if options.output is None:
+        rsync_name = options.suffix
+        if options.suffix == 'metrics':
+            # A legacy name. Ideally, suffix and rsync_name should be the same.
+            rsync_name = 'utilization'
+
         options.output = default_output_name(options.ts_start, options.ts_end,
-                                             options.output_dir)
+                                             options.output_dir, rsync_name,
+                                             options.suffix)
 
     return options
 

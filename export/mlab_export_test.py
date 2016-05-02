@@ -181,7 +181,8 @@ class MlabExport_GlobalTests(unittest.TestCase):
         start = FAKE_TIMESTAMP
         end = start + 3600
 
-        returned_value = mlab_export.default_output_name(start, end, '/output')
+        returned_value = mlab_export.default_output_name(
+            start, end, '/output', 'utilization', 'metrics')
 
         self.assertEqual(returned_value, expected_value)
 
@@ -346,7 +347,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
         expected_map = {'cpu_cores.gauge': 'cpu.cores',
                         'uptime.uptime': 'system.uptime'}
 
-        returned_map = mlab_export.read_metric_map(fake_metric_conf)
+        returned_map = mlab_export.read_metric_map(fake_metric_conf, 'metrics')
 
         self.assertEqual(returned_map, expected_map)
 
@@ -354,22 +355,22 @@ class MlabExport_GlobalTests(unittest.TestCase):
         fake_metric_conf = os.path.join(self._testdata_dir,
                                         'no_such_metrics.conf')
 
-        self.assertRaises(SystemExit, mlab_export.read_metric_map,
-                          fake_metric_conf)
+        with self.assertRaises(SystemExit):
+            mlab_export.read_metric_map(fake_metric_conf, 'metrics')
 
     def testunit_read_metric_map_WHEN_config_parse_error(self):
         fake_metric_conf = os.path.join(self._testdata_dir,
                                         'sample_metrics_with_error.conf')
 
-        self.assertRaises(SystemExit, mlab_export.read_metric_map,
-                          fake_metric_conf)
+        with self.assertRaises(SystemExit):
+            mlab_export.read_metric_map(fake_metric_conf, 'metrics')
 
     def testunit_read_metric_map_WHEN_config_is_missing_metrics_section(self):
         fake_metric_conf = os.path.join(self._testdata_dir,
                                         'sample_metrics_missing_section.conf')
 
-        self.assertRaises(SystemExit, mlab_export.read_metric_map,
-                          fake_metric_conf)
+        with self.assertRaises(SystemExit):
+            mlab_export.read_metric_map(fake_metric_conf, 'metrics')
 
     @mock.patch('mlab_export.default_output_name')
     @mock.patch('mlab_export.default_start_time')
@@ -388,6 +389,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
         mock_options.ts_end = None
         mock_options.ts_start = None
         mock_options.output = None
+        mock_options.suffix = 'metrics'
         mock_read_metric_map.return_value = {}
         mlab_export.HOSTNAME = 'mlab2.nuq0t'
         mock_default_output_name.return_value = 'fake-output-name'
