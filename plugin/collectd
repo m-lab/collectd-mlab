@@ -4,15 +4,27 @@
 # NOTE: If collectd crashes, or exits prematurely without removing the
 # collect-unixsock then, on the next start, collectd fails to initalize. So,
 # remove the stale unix socket here.
+# TODO(soltesz): Later versions of collectd have a configuration option to
+# automatically remove the unixsock if it is present. Unfortunately, this is
+# not available in the version available in CentOS 6.
 UNIXSOCK="/var/run/collectd-unixsock"
 if test -r "${UNIXSOCK}"; then
   rm -f "${UNIXSOCK}"
 fi
-# TODO(soltesz): Later versions of collectd have a configuration option to
-# automatically remove the unixsock if it is present. Unfortunately, this is
-# not available in the version available in CentOS 6.
 
 # NOTE: Reset the collectd CONFIG file used by /etc/init.d/collectd. By default,
 # /etc/init.d/collectd uses "/etc/collectd.conf". We reset CONFIG here to use
 # M-Lab specific configuration. So, content in "/etc/collectd.conf" is ignored.
 CONFIG=/etc/collectd-mlab.conf
+
+# NOTE: Collectd starts polling at proces start time. And, RRD time bins are
+# 10-second aligned. This means that polling can occur several seconds into a
+# 10-second bin but there is no indication of this.
+#
+# To record measurements as close to the time bin as possible, we wait to start
+# the process on a 10-second aligned time.
+t=$( date +%s )
+until [[ $(( $t % 10 )) -eq 0 ]] ; do
+    sleep 0.2
+    t=$( date +%s )
+done

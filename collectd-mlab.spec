@@ -3,7 +3,7 @@
 #
 %define name collectd-mlab
 %define slicename mlab_utility
-%define version 1.0
+%define version 1.5
 %define taglevel alpha
 %define releasetag %{taglevel}%{?date:.%{date}}
 
@@ -14,6 +14,9 @@
 %global __os_install_post %( \
     echo '%{__os_install_post}' | \
     sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g' )
+
+%define site_packages %( \
+    python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())" )
 
 Vendor: Measurement Lab
 Packager: Measurement Lab <support@measurementlab.net>
@@ -35,9 +38,12 @@ Requires: yum-cron
 Requires: collectd
 Requires: collectd-web
 Requires: collectd-rrdtool
+Requires: collectd-snmp
 Requires: python-rrdtool
 Requires: python-gflags
 Requires: python-netifaces
+Requires: net-snmp-python
+Requires: PyYAML
 
 Source0: %{name}-%{version}.tar.bz2
 
@@ -77,17 +83,41 @@ install -D -m 644 viewer/collection-mlab.conf		%{buildroot}/etc/collection-mlab.
 install -D -m 644 plugin/collectd			%{buildroot}/etc/default/collectd
 install -D -m 644 plugin/collectd-mlab.conf		%{buildroot}/etc/collectd-mlab.conf
 install -D -m 644 plugin/types.db			%{buildroot}/usr/share/collectd-mlab/types.db
-install -D -m 644 plugin/mlab.py			%{buildroot}/var/lib/collectd/python/mlab.py
+install -D -m 644 plugin/mlab.py			%{buildroot}/var/lib/collectd/python/mlab_vs.py
+
+# Init script.
+install -D -m 755 plugin/collectd-setup		%{buildroot}/etc/init.d/collectd-setup
+
+# Python site-packages modules.
+install -d %{buildroot}/%{site_packages}/mlab/disco
+install -D -m 644 site-packages/mlab/disco/__init__.py \
+                  site-packages/mlab/disco/arp.py \
+                  site-packages/mlab/disco/collectd.py \
+                  site-packages/mlab/disco/discovery.py \
+                  site-packages/mlab/disco/models.py \
+                  site-packages/mlab/disco/network.py \
+                  site-packages/mlab/disco/route.py \
+                  site-packages/mlab/disco/simple_session.py \
+                  %{buildroot}/%{site_packages}/mlab/disco
+
+# Disco commands.
+install -D -m 755 disco/disco_config.py	%{buildroot}/usr/bin/disco_config.py
+
+# Disco config.
+install -D -m 644 disco/models.yaml \
+    %{buildroot}/usr/share/collectd-mlab/models.yaml
 
 #
 # Files for "collectd-mlab-vsys" package.
 #
 
 # Monitoring.
-install -D -m 755 monitoring/check_collectd_mlab.py	%{buildroot}/usr/lib/nagios/plugins/check_collectd_mlab.py
+install -D -m 755 monitoring/check_collectd_mlab.py \
+    %{buildroot}/usr/lib/nagios/plugins/check_collectd_mlab.py
 
 # Vsys backend.
-install -D -m 755 system/vsys/vs_resource_backend.py	%{buildroot}/vsys/vs_resource_backend
+install -D -m 755 system/vsys/vs_resource_backend.py \
+    %{buildroot}/vsys/vs_resource_backend
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -112,10 +142,29 @@ rm -rf $RPM_BUILD_ROOT
 /etc/collection-mlab.conf
 
 # Collectd configuration.
-/var/lib/collectd/python/mlab.py
+/var/lib/collectd/python/mlab_vs.py
 /etc/default/collectd
 /etc/collectd-mlab.conf
 /usr/share/collectd-mlab/types.db
+
+# Init script.
+/etc/init.d/collectd-setup
+
+# Python site-packages modules.
+%{site_packages}/mlab/disco/__init__.py
+%{site_packages}/mlab/disco/arp.py
+%{site_packages}/mlab/disco/collectd.py
+%{site_packages}/mlab/disco/discovery.py
+%{site_packages}/mlab/disco/models.py
+%{site_packages}/mlab/disco/network.py
+%{site_packages}/mlab/disco/route.py
+%{site_packages}/mlab/disco/simple_session.py
+
+# Disco commands.
+/usr/bin/disco_config.py
+
+# Disco configs.
+/usr/share/collectd-mlab/models.yaml
 
 %post
 
@@ -130,6 +179,14 @@ fi
 chkconfig crond on
 chkconfig rsyslog on
 chkconfig collectd on
+chkconfig collectd-setup on
+
+# TODO(soltesz): fix mlab_export.py to handle initial conditions correctly.
+# Initialize the lastexport timestamp file to one hour ago.
+touch -t $( date +%Y%m%d%H00 -d "-1 hour" ) /var/lib/collectd/lastexport.tstamp
+
+# TODO(soltesz): what package should own this file?
+touch %{site_packages}/mlab/__init__.py
 
 # NOTE: Only run these steps if in a development environment.
 if test -n "${DEVEL_ENVIRONMENT}" ; then
@@ -140,6 +197,7 @@ if test -n "${DEVEL_ENVIRONMENT}" ; then
 
   service crond start
   service rsyslog start
+  service collectd-setup start
   service collectd start
 fi
 
