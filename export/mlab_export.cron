@@ -27,5 +27,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
 #
 # Thus, the cron start matches --ts_offset.
 #
-10 * * * * root	 /usr/bin/mlab_export.py --noupdate --compress > /dev/null
-11 * * * * root	 /usr/bin/mlab_export.py --suffix=switch --compress > /dev/null
+10 * * * * root	 /usr/share/collectd-mlab/run_export.sh

@@ -63,30 +63,31 @@ plugin, and processes for periodic data export.
 #
 
 # Overview and license.
-install -D -m 644 README.md	%{buildroot}/usr/share/collectd-mlab/README.md
-install -D -m 644 LICENSE	%{buildroot}/usr/share/collectd-mlab/LICENSE
+install -D -m 644 README.md %{buildroot}/usr/share/collectd-mlab/README.md
+install -D -m 644 LICENSE   %{buildroot}/usr/share/collectd-mlab/LICENSE
 
 # Data export scripts.
-install -D -m 755 export/mlab_export_cleanup.cron	%{buildroot}/etc/cron.daily/mlab_export_cleanup.cron
-install -D -m 644 export/mlab_export.cron		%{buildroot}/etc/cron.d/mlab_export.cron
-install -D -m 755 export/mlab_export.py			%{buildroot}/usr/bin/mlab_export.py
-install -D -m 644 export/export_metrics.conf		%{buildroot}/usr/share/collectd-mlab/export_metrics.conf
-install -D -m 644 export/mlab_collectd_watchdog.cron	%{buildroot}/etc/cron.d/mlab_collectd_watchdog.cron
-install -D -m 755 export/mlab_collectd_watchdog.sh		%{buildroot}/usr/share/collectd-mlab/mlab_collectd_watchdog.sh
+install -D -m 755 export/mlab_export_cleanup.cron    %{buildroot}/etc/cron.daily/mlab_export_cleanup.cron
+install -D -m 644 export/mlab_export.cron            %{buildroot}/etc/cron.d/mlab_export.cron
+install -D -m 755 export/mlab_export.py              %{buildroot}/usr/bin/mlab_export.py
+install -D -m 644 export/export_metrics.conf         %{buildroot}/usr/share/collectd-mlab/export_metrics.conf
+install -D -m 644 export/mlab_collectd_watchdog.cron %{buildroot}/etc/cron.d/mlab_collectd_watchdog.cron
+install -D -m 755 export/mlab_collectd_watchdog.sh   %{buildroot}/usr/share/collectd-mlab/mlab_collectd_watchdog.sh
+install -D -m 755 export/run_export.sh               %{buildroot}/usr/share/collectd-mlab/run_export.sh
 
 # Configuration for *limited* access to collectd-web.
-install -D -m 755 viewer/mlab-view 			%{buildroot}/usr/bin/mlab-view
-install -D -m 644 viewer/httpd.collectd.conf		%{buildroot}/usr/share/collectd-mlab/httpd.conf
-install -D -m 644 viewer/collection-mlab.conf		%{buildroot}/etc/collection-mlab.conf
+install -D -m 755 viewer/mlab-view            %{buildroot}/usr/bin/mlab-view
+install -D -m 644 viewer/httpd.collectd.conf  %{buildroot}/usr/share/collectd-mlab/httpd.conf
+install -D -m 644 viewer/collection-mlab.conf %{buildroot}/etc/collection-mlab.conf
 
 # Collectd configuration.
-install -D -m 644 plugin/collectd			%{buildroot}/etc/default/collectd
-install -D -m 644 plugin/collectd-mlab.conf		%{buildroot}/etc/collectd-mlab.conf
-install -D -m 644 plugin/types.db			%{buildroot}/usr/share/collectd-mlab/types.db
-install -D -m 644 plugin/mlab.py			%{buildroot}/var/lib/collectd/python/mlab_vs.py
+install -D -m 644 plugin/collectd           %{buildroot}/etc/default/collectd
+install -D -m 644 plugin/collectd-mlab.conf %{buildroot}/etc/collectd-mlab.conf
+install -D -m 644 plugin/types.db           %{buildroot}/usr/share/collectd-mlab/types.db
+install -D -m 644 plugin/mlab.py            %{buildroot}/var/lib/collectd/python/mlab_vs.py
 
 # Init script.
-install -D -m 755 plugin/collectd-setup		%{buildroot}/etc/init.d/collectd-setup
+install -D -m 755 plugin/collectd-setup     %{buildroot}/etc/init.d/collectd-setup
 
 # Python site-packages modules.
 install -d %{buildroot}/%{site_packages}/mlab/disco
@@ -101,7 +102,7 @@ install -D -m 644 site-packages/mlab/disco/__init__.py \
                   %{buildroot}/%{site_packages}/mlab/disco
 
 # Disco commands.
-install -D -m 755 disco/disco_config.py	%{buildroot}/usr/bin/disco_config.py
+install -D -m 755 disco/disco_config.py     %{buildroot}/usr/bin/disco_config.py
 
 # Disco config.
 install -D -m 644 disco/models.yaml \
@@ -132,6 +133,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/mlab_export.py
 /usr/share/collectd-mlab/export_metrics.conf
 /usr/share/collectd-mlab/mlab_collectd_watchdog.sh
+/usr/share/collectd-mlab/run_export.sh
 /etc/cron.d/mlab_export.cron
 /etc/cron.d/mlab_collectd_watchdog.cron
 /etc/cron.daily/mlab_export_cleanup.cron
@@ -180,10 +182,6 @@ chkconfig crond on
 chkconfig rsyslog on
 chkconfig collectd on
 chkconfig collectd-setup on
-
-# TODO(soltesz): fix mlab_export.py to handle initial conditions correctly.
-# Initialize the lastexport timestamp file to one hour ago.
-touch -t $( date +%Y%m%d%H00 -d "-1 hour" ) /var/lib/collectd/lastexport.tstamp
 
 # TODO(soltesz): what package should own this file?
 touch %{site_packages}/mlab/__init__.py
