@@ -17,6 +17,11 @@ fi
 # M-Lab specific configuration. So, content in "/etc/collectd.conf" is ignored.
 CONFIG=/etc/collectd-mlab.conf
 
+# NOTE: Run setup before starting.
+if [[ "$1" == "start" ]] ; then
+    /usr/bin/collectd_snmp_setup.sh
+fi
+
 # NOTE: Collectd starts polling at proces start time. And, RRD time bins are
 # 10-second aligned. This means that polling can occur several seconds into a
 # 10-second bin but there is no indication of this.
