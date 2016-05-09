@@ -99,6 +99,8 @@ class MLabCollectdAssertionTests(unittest.TestCase):
             os.path.join(self.testdata_dir, 'fake_backend'))
         check_collectd_mlab.VSYSPATH_SLICE = (
             os.path.join(self.testdata_dir, 'fake_slice'))
+        check_collectd_mlab.SNMP_COMMUNITY = (
+            os.path.join(self.testdata_dir, 'fake_snmp_community'))
 
     @mock.patch('check_collectd_mlab.sock_connect')
     def testunit_assert_collectd_responds_WHEN_sock_sendcmd_fails(
@@ -164,6 +166,20 @@ class MLabCollectdAssertionTests(unittest.TestCase):
         with self.assertRaises(check_collectd_mlab.MissingSocketError):
             check_collectd_mlab.assert_collectd_installed()
 
+    def testunit_assert_collectd_installed_WHEN_missing_community_RAISES_error(
+            self):
+        check_collectd_mlab.SNMP_COMMUNITY = 'does_not_exist'
+
+        with self.assertRaises(check_collectd_mlab.MissingSNMPCommunityError):
+            check_collectd_mlab.assert_collectd_installed()
+
+    def testunit_assert_collectd_installed_WHEN_missing_updated_RAISES_error(
+            self):
+        # Use default value for check_collectd_mlab.SNMP_COMMUNITY.
+        with self.assertRaises(
+                check_collectd_mlab.MissingUpdatedSNMPCommunityError):
+            check_collectd_mlab.assert_collectd_installed()
+
     def testunit_assert_collectd_vsys_setup_WHEN_vsys_backend_is_missing(self):
         check_collectd_mlab.VSYSPATH_BACKEND = 'does_not_exist'
 
@@ -196,7 +212,8 @@ class MLabNagiosTests(unittest.TestCase):
     @mock.patch('check_collectd_mlab.run_collectd_nagios')
     def testcover_assert_collectd_nagios_levels(self, mock_run_collectd_nagios):
         # This is not ideal. But, it's just a coverage test.
-        # Non-zero values cause a failue. Cause each call to to fail in sequence.
+        # Non-zero values cause a failure. So, cause each call to fail in
+        # sequence.
         mock_run_collectd_nagios.side_effect = [1]
         with self.assertRaises(check_collectd_mlab.NagiosStateError):
             check_collectd_mlab.assert_collectd_nagios_levels()
@@ -210,6 +227,10 @@ class MLabNagiosTests(unittest.TestCase):
             check_collectd_mlab.assert_collectd_nagios_levels()
 
         mock_run_collectd_nagios.side_effect = [0, 0, 0, 1]
+        with self.assertRaises(check_collectd_mlab.NagiosStateError):
+            check_collectd_mlab.assert_collectd_nagios_levels()
+
+        mock_run_collectd_nagios.side_effect = [0, 0, 0, 0, 1]
         with self.assertRaises(check_collectd_mlab.NagiosStateError):
             check_collectd_mlab.assert_collectd_nagios_levels()
 

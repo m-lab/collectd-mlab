@@ -69,6 +69,11 @@ VSYSPATH_BACKEND = '/vsys/vs_resource_backend'
 VSYSPATH_SLICE = '/vservers/%s/vsys/vs_resource_backend.in' % SLICENAME
 DEFAULT_TIMEOUT = 60
 
+# Switch and SNMP constants.
+SNMP_COMMUNITY = '/vservers/%s/home/%s/conf/snmp.community' % (SLICENAME,
+                                                               SLICENAME)
+SWITCHNAME = 's1.' + '.'.join(HOSTNAME.split('.')[1:])
+
 # Canonical, nagios exit codes.
 STATE_OK = 0
 STATE_WARNING = 1
@@ -109,6 +114,16 @@ class MissingBinaryError(CriticalError):
 
 class MissingNagiosBinaryError(CriticalError):
     """The collectd-nagios binary is missing."""
+    pass
+
+
+class MissingSNMPCommunityError(CriticalError):
+    """The snmp.community file is missing."""
+    pass
+
+
+class MissingUpdatedSNMPCommunityError(CriticalError):
+    """The snmp.community.updated file is missing."""
     pass
 
 
@@ -271,6 +286,19 @@ def assert_collectd_installed():
         raise MissingSocketError('collectd unixsock not present: %s.',
                                  COLLECTD_UNIXSOCK)
 
+    # Is the SNMP community string installed?
+    if not (os.path.exists(SNMP_COMMUNITY) and
+            os.stat(SNMP_COMMUNITY).st_size > 0):
+        raise MissingSNMPCommunityError(
+            'Collectd snmp.community not found: %s.', SNMP_COMMUNITY)
+
+    # Is the *updated* SNMP community string installed?
+    if not (os.path.exists(SNMP_COMMUNITY + '.updated') and
+            os.stat(SNMP_COMMUNITY + '.updated').st_size > 0):
+        raise MissingUpdatedSNMPCommunityError(
+            'Collectd snmp.community.updated not found: %s.updated',
+            SNMP_COMMUNITY)
+
 
 def assert_collectd_responds():
     """Asserts that collectd is responding over the COLLECTD_UNIXSOCK.
@@ -372,6 +400,8 @@ def assert_collectd_nagios_levels():
       NagiosStateError, if an error occurs.
     """
     # TODO: Make warning & critical thresholds configurable.
+    # See: https://collectd.org/documentation/manpages/collectd-nagios.1.shtml
+    # for a description of the range specifiation.
 
     # Is utility slice quota ok?
     exit_code = run_collectd_nagios('utility.mlab.' + HOSTNAME,
@@ -399,6 +429,14 @@ def assert_collectd_nagios_levels():
                                     '0:100')
     if exit_code != 0:
         raise NagiosStateError('Collectd mlab plugin taking too long to run',
+                               exit_code)
+
+    # Is DISCO collecting data? This does not check the values, only that they
+    # are collected.
+    exit_code = run_collectd_nagios(SWITCHNAME, 'snmp/ifx_discards-local', 'tx',
+                                    '@~:-1', '@~:-1')
+    if exit_code != 0:
+        raise NagiosStateError('Collectd mlab plugin not collecting SNMP data.',
                                exit_code)
 
 
