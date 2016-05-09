@@ -16,6 +16,7 @@
 import logging
 import os
 import StringIO
+import time
 import unittest
 
 # Third-party modules.
@@ -127,6 +128,14 @@ class MlabExport_GlobalTests(unittest.TestCase):
                                                         ts_previous)
 
         self.assertEqual(returned_start, expected_start)
+
+    @mock.patch.object(time, 'time')
+    def testunit_default_end_time(self, mock_time):
+        mock_time.return_value = FAKE_TIMESTAMP
+
+        actual_end = mlab_export.default_end_time(1000)
+
+        self.assertEqual(actual_end, FAKE_TIMESTAMP)
 
     @mock.patch('mlab_export.time.time')
     def testunit_default_start_time_WHEN_ts_previous_IS_zero(self, mock_time):
@@ -373,10 +382,11 @@ class MlabExport_GlobalTests(unittest.TestCase):
             mlab_export.read_metric_map(fake_metric_conf, 'metrics')
 
     @mock.patch('mlab_export.default_output_name')
+    @mock.patch('mlab_export.default_end_time')
     @mock.patch('mlab_export.default_start_time')
     @mock.patch('mlab_export.read_metric_map')
     def testunit_init_args(self, mock_read_metric_map, mock_default_start_time,
-                           mock_default_output_name):
+                           mock_default_end_time, mock_default_output_name):
         mock_options = disable_show_options(mock.Mock())
         mock_options.rrddir_prefix = os.path.join(self._testdata_dir, 'rrd')
         mock_options.exclude = []
@@ -394,6 +404,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
         mlab_export.HOSTNAME = 'mlab2.nuq0t'
         mock_default_output_name.return_value = 'fake-output-name'
         mock_default_start_time.return_value = FAKE_TIMESTAMP
+        mock_default_end_time.return_value = FAKE_TIMESTAMP + 1000
         ts_previous = 0
 
         mlab_export.init_args(mock_options, ts_previous)

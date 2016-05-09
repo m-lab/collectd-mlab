@@ -604,8 +604,8 @@ def init_args(options, ts_previous):
         options.ts_start = default_start_time(options, ts_previous)
 
     if options.ts_end is None:
-        options.ts_end = (
-            align_timestamp(options.ts_start, options.step) + options.length)
+        options.ts_end = default_end_time(options.length)
+        options.length = options.ts_end - options.ts_start
 
     if any_show_options(options):
         options.update = False
