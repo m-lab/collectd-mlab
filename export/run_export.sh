@@ -7,6 +7,6 @@ if test -s /home/mlab_utility/conf/snmp.community ; then
         # for first export.
         touch -t $( date +%Y%m%d%H00 -d "-1 hour" ) /var/lib/collectd/lastexport.tstamp
     fi
-    /usr/bin/mlab_export.py --noupdate --suffix=switch --compress > /dev/null
+    /usr/bin/mlab_export.py --noupdate --suffix=switch --counts --compress > /dev/null
 fi
 /usr/bin/mlab_export.py --compress > /dev/null

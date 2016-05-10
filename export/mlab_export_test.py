@@ -257,7 +257,24 @@ class MlabExport_GlobalTests(unittest.TestCase):
 
         returned_value = mlab_export.get_json_record(
             'mlab2.nuq0t', 'utility.mlab', 'network.ipv4.bytes.rx', timestamps,
-            values)
+            values, 1)
+
+        self.assertEqual(returned_value, expected_value)
+
+    def testunit_get_json_record_when_scale_is_10(self):
+        timestamps = [1, 2, 3]
+        values = [10.0, 11.0, 12.0]
+        expected_value = {'sample': [
+                             {'timestamp': 1, 'value': 100.0},
+                             {'timestamp': 2, 'value': 110.0},
+                             {'timestamp': 3, 'value': 120.0}],
+                          'metric': 'network.ipv4.bytes.rx',
+                          'hostname': 'mlab2.nuq0t',
+                          'experiment': 'utility.mlab'}  # yapf: disable
+
+        returned_value = mlab_export.get_json_record(
+            'mlab2.nuq0t', 'utility.mlab', 'network.ipv4.bytes.rx', timestamps,
+            values, 10)
 
         self.assertEqual(returned_value, expected_value)
 
@@ -332,6 +349,7 @@ class MlabExport_GlobalTests(unittest.TestCase):
         mock_options.output = 'output'
         mock_options.ts_start = 0
         mock_options.ts_end = 10
+        mock_options.counts = False
         expected_value = (
             '{"sample": [{"timestamp": 0, "value": 0.0}], '
             '"metric": "fake_metric_name", "hostname": "fake_hostname", '

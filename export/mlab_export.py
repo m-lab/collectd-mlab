@@ -154,6 +154,9 @@ flags.DEFINE_string('suffix', 'metrics',
                     ('The suffix is appended to file names during export, e.g. '
                      '*-<suffix>.json.gz, and the suffix is used as a section '
                      'header in the "--export_metrics" configuration file.'))
+flags.DEFINE_bool('counts', False,
+                  ('Export metric counts rather than rates. Counts are '
+                   'recovered by multiplying rates by the stepsize.'))
 
 
 class Error(Exception):
@@ -414,7 +417,7 @@ def get_canonical_names(filename, value_name, options):
     return (HOSTNAME, experiment, metric)
 
 
-def get_json_record(hostname, experiment, metric, timestamps, values):
+def get_json_record(hostname, experiment, metric, timestamps, values, scale):
     """Creates a dict suitable for export to json.
 
     Args:
@@ -423,6 +426,7 @@ def get_json_record(hostname, experiment, metric, timestamps, values):
       metric: str, the canonical metric name for values.
       timestamps: iterable of int, timestamps corresponding to each value.
       values: iterable of float, values corresponding to each timestamp.
+      scale: int, a constant used to scale values.
 
     Returns:
       dict, with keys for hostname, experiment, metric, and sample.
@@ -433,18 +437,20 @@ def get_json_record(hostname, experiment, metric, timestamps, values):
         'experiment': experiment,
         'metric': metric
     }
-    json_data['sample'] = get_json_record_samples(timestamps, values)
+    json_data['sample'] = get_json_record_samples(timestamps, values, scale)
     return json_data
 
 
-def get_json_record_samples(timestamps, values):
+def get_json_record_samples(timestamps, values, scale):
     """Converts a sequences of timestampes and values for a json record.
 
-    The timestamps and values arguments must be the same length.
+    The timestamps and values arguments must be the same length. Each value is
+    multiplied by scale and the result is saved.
 
     Args:
       timestamps: iterable of int, timestamps corresponding to each value.
       values: iterable of float, values corresponding to each timestamp.
+      scale: int, a constant used to scale values.
 
     Returns:
       list of dict, each dict has keys timestamp and value.
@@ -453,7 +459,8 @@ def get_json_record_samples(timestamps, values):
     assert (len(timestamps) == len(values))
     for i in xrange(len(timestamps)):
         if values[i] is not None:
-            samples.append({'timestamp': timestamps[i], 'value': values[i]})
+            samples.append({'timestamp': timestamps[i],
+                            'value': values[i] * scale})
     return samples
 
 
@@ -509,6 +516,7 @@ def rrd_export(options):
         open_func = gzip.open
         options.output += '.gz'
     make_output_dirs(options.output)
+    scale = options.step if options.counts else 1
     with contextlib.closing(open_func(options.output, 'w')) as fd_output:
         for filename in get_rrd_files(options.rrddir_prefix):
             time_range, value_names, data = rrdtool.fetch(
@@ -529,7 +537,7 @@ def rrd_export(options):
                 if metric is None or experiment in options.ignored_experiments:
                     continue
                 record = get_json_record(hostname, experiment, metric,
-                                         timestamps, values[i])
+                                         timestamps, values[i], scale)
                 write_json_record(fd_output, record, options.pretty_json)
 
 
