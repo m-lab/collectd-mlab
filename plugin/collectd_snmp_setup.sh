@@ -38,11 +38,12 @@ else
             --hostname "${SWITCH}" > "${COLLECTD_SNMP}.tmp"
         # If the configuration was generated successfully,
         if [[ $? -eq 0 ]] && test -s "${COLLECTD_SNMP}.tmp" ; then
-           # if the destination is either missing, or different from source,
-           if ! test -f "${COLLECTD_SNMP}" \
-               || ! diff -q "${COLLECTD_SNMP}.tmp" "${COLLECTD_SNMP}" ; then
-               # Update the configuration.
-               mv "${COLLECTD_SNMP}.tmp" "${COLLECTD_SNMP}"
+            # if the destination is either missing, or different from source,
+            if ! test -f "${COLLECTD_SNMP}" \
+                || ! diff -q "${COLLECTD_SNMP}.tmp" "${COLLECTD_SNMP}" ; then
+                # Update the configuration.
+                mv "${COLLECTD_SNMP}.tmp" "${COLLECTD_SNMP}"
+            fi
         fi
     fi
 fi
