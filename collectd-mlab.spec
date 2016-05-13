@@ -4,7 +4,7 @@
 %define name collectd-mlab
 %define slicename mlab_utility
 %define version 1.5
-%define taglevel alpha
+%define taglevel alpha2
 %define releasetag %{taglevel}%{?date:.%{date}}
 
 # NOTE: Disable the brp-python-bytecompile script (which creates *.pyc, *.pyo).

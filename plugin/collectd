@@ -8,7 +8,7 @@
 # automatically remove the unixsock if it is present. Unfortunately, this is
 # not available in the version available in CentOS 6.
 UNIXSOCK="/var/run/collectd-unixsock"
-if test -r "${UNIXSOCK}"; then
+if test -r "${UNIXSOCK}" && ! grep -q "${UNIXSOCK}" /proc/net/unix; then
   rm -f "${UNIXSOCK}"
 fi
 
