@@ -11,9 +11,9 @@ install:
     - pip install -r requirements.txt
     - pip install -r test-requirements.txt
     - pip install coveralls
-    - pip install pyflakes==1.0.0
-    - pip install yapf==0.7.0
-    - pip install pylint==1.5.5
+    - pip install pyflakes==1.2.3
+    - pip install pylint==1.5.6
+    - pip install yapf==0.10.0
 script:
     # See fake-packages/README.md for background on why we need fake-packages.
     - PYTHONPATH=$PYTHONPATH:$PWD/fake-packages ./build

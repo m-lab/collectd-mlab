@@ -151,8 +151,8 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     def testunit_get_xid_names(self, mock_getpwuid):
         vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
         mock_getpwuid.return_value = pwd.struct_pwent(
-            ('mlab_utility', '*', 515, 505, 1, '/home/mlab_utility', '/bin/bash'
-            ))
+            ('mlab_utility', '*', 515, 505, 1, '/home/mlab_utility',
+             '/bin/bash'))
         expected_value = {'515': 'mlab_utility'}
 
         returned_value = vs_resource_backend.get_xid_names()
@@ -173,8 +173,8 @@ class MlabVsResourceBackendTests(unittest.TestCase):
     @mock.patch('vs_resource_backend.pwd.getpwuid')
     def testunit_get_xid_names_WHEN_pw_name_IS_invalid(self, mock_getpwuid):
         vs_resource_backend._VS_PREFIX_DIR = self._testdata_dir
-        mock_getpwuid.return_value = pwd.struct_pwent((
-            '', '*', 515, 505, 1, '/home/mlab_utility', '/bin/bash'))
+        mock_getpwuid.return_value = pwd.struct_pwent(
+            ('', '*', 515, 505, 1, '/home/mlab_utility', '/bin/bash'))
         expected_value = {}
 
         returned_value = vs_resource_backend.get_xid_names()

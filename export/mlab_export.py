@@ -588,8 +588,9 @@ def read_metric_map(filename, section):
 
 def any_show_options(options):
     """Checks if any show options are True."""
-    return any([options.show_nagios, options.show_rrdfile, options.
-                show_rawmetric, options.show_metric, options.show_skipped])
+    return any([options.show_nagios, options.show_rrdfile,
+                options.show_rawmetric, options.show_metric,
+                options.show_skipped])
 
 
 def init_args(options, ts_previous):
