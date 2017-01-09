@@ -4,7 +4,7 @@
 %define name collectd-mlab
 %define slicename mlab_utility
 %define version 2.0
-%define taglevel 1
+%define taglevel 2
 %define releasetag %{taglevel}%{?date:.%{date}}
 
 # NOTE: Disable the brp-python-bytecompile script (which creates *.pyc, *.pyo).
@@ -44,6 +44,8 @@ Requires: python-gflags
 Requires: python-netifaces
 Requires: net-snmp-python
 Requires: PyYAML
+# Extremely convenient for diagnostics.
+Requires: net-snmp-utils
 
 Source0: %{name}-%{version}.tar.bz2
 

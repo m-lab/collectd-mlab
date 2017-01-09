@@ -17,8 +17,8 @@ fi
 # M-Lab specific configuration. So, content in "/etc/collectd.conf" is ignored.
 CONFIG=/etc/collectd-mlab.conf
 
-# NOTE: Run setup before starting.
-if [[ "$1" == "start" ]] ; then
+# NOTE: Run setup before starting or restarting.
+if [[ "$1" == *"start" ]] ; then
     /usr/bin/collectd_snmp_setup.sh
 fi
 
