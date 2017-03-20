@@ -16,7 +16,7 @@ The `disco_config.py` command line tool should generate the contents for
 start` or `service collectd restart`, but the error output may be hidden.
 
 ```
-disco_config.py --command collectd-snmp-config \
+/usr/bin/disco_config.py --command collectd-snmp-config \
     --community_file=/home/mlab_utility/conf/snmp.community \
     --hostname $SWITCH
 ```
