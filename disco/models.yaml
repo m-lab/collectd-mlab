@@ -108,3 +108,8 @@ default_oids:
         !oid
         rx: RFC1213-MIB::ifInErrors.{ifIndex}
         tx: RFC1213-MIB::ifOutErrors.{ifIndex}
+
+    pause:
+        !oid
+        rx: EtherLike-MIB::dot3InPauseFrames.{ifIndex}
+        tx: EtherLike-MIB::dot3OutPauseFrames.{ifIndex}

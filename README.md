@@ -57,3 +57,16 @@ Python files should follow the Google Python Style Guide:
 Some exceptions are embedded in the collect-mlab source or encoded in .pylintrc.
 
 If you find examples where this is not the case, please report it as a bug.
+
+Adding New Metrics
+==================
+
+To add new metrics to DISCO, update the following files:
+
+* `disco/models.yaml` - this file defines the set of SNMP metrics that collectd
+  will sample.
+* `plugin/types.db` - this file defines the RRD parameters for the SNMP metrics
+  declared in models.yaml. These values control the min / max values possible,
+  the metric type (e.g. COUNTER or GAUGE).
+* `export/export_metrics.conf` - this file controls how RRD file names are
+  mapped to 'metric' names when disco exports the RRD data to JSON.
