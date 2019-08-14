@@ -177,7 +177,7 @@ class LockFileError(Error):
 def init_global():
     global HOSTNAME
     # NOTE: This should be the hostname of root context, not slice context.
-    HOSTNAME = socket.gethostname()
+    HOSTNAME = os.environ.get('HOSTNAME', 'host.missing')
     logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 

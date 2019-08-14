@@ -6,6 +6,7 @@
 
 COLLECTD_SNMP="/etc/collectd-snmp.conf"
 COMMUNITY="/home/mlab_utility/conf/snmp.community"
+HOSTNAME=`cat /home/mlab_utility/conf/hostname`
 SWITCH="s1.${HOSTNAME#*.}"
 
 

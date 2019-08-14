@@ -117,6 +117,7 @@ install -D -m 644 disco/models.yaml \
 # Monitoring.
 install -D -m 755 monitoring/check_collectd_mlab.py \
     %{buildroot}/usr/lib/nagios/plugins/check_collectd_mlab.py
+install -D -m 644 collectd_mlab.cron %{buildroot}/etc/cron.d/collectd_mlab.cron
 
 # Vsys backend.
 install -D -m 755 system/vsys/vs_resource_backend.py \
@@ -170,6 +171,10 @@ rm -rf $RPM_BUILD_ROOT
 # Disco configs.
 /usr/share/collectd-mlab/models.yaml
 
+# Monitoring.
+/usr/lib/nagios/plugins/check_collectd_mlab.py
+/etc/cron.d/collectd_mlab.cron
+
 %post
 
 # NOTE: The collectd-web rpm owns /etc/collection.conf and COLLECTD_LINK.
@@ -213,9 +218,6 @@ root context of the M-Lab server.
 %files host
 # Vsys backend.
 /vsys/vs_resource_backend
-
-# Monitoring.
-/usr/lib/nagios/plugins/check_collectd_mlab.py
 
 %pre host
 # Check if we're trying to install the vsys packate in a guest context.

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export HOSTNAME=$(cat /home/mlab_utility/conf/hostname)
+
 if test -s /home/mlab_utility/conf/snmp.community ; then
     if ! test -f /var/lib/collectd/lastexport.tstamp ; then
         # TODO(soltesz): Fix mlab_export.py to handle initial conditions

@@ -1,0 +1,16 @@
+# Determine collectd-mlab status and write it to a Prometheus node_exporter
+# file.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+SCRIPT=/usr/lib/nagios/plugins/check_collectd_mlab.py
+PROM_FILE=/var/spool/node_exporter/collectd.prom
+PROM_METRIC='collectd_mlab_success{experiment="utility.mlab"}'
+
+# Check the status of collectd-mlab every minute. The script's return code
+# conforms to Unix-like and Nagios standards where "success" equals 0 and
+# anything else is an error. Prometheus tends to think of "success" as 1 and
+# failure as 0. The following command makes that conversion so that status is
+# more consistent with other Prometheus metrics.
+
+*/5 * * * * root $SCRIPT &> /dev/null; if [[ $? == "0" ]]; then echo "${PROM_METRIC} 1" > $PROM_FILE; else echo "${PROM_METRIC} 0" > $PROM_FILE; fi

@@ -218,22 +218,6 @@ class MLabNagiosTests(unittest.TestCase):
         with self.assertRaises(check_collectd_mlab.NagiosStateError):
             check_collectd_mlab.assert_collectd_nagios_levels()
 
-        mock_run_collectd_nagios.side_effect = [0, 1]
-        with self.assertRaises(check_collectd_mlab.NagiosStateError):
-            check_collectd_mlab.assert_collectd_nagios_levels()
-
-        mock_run_collectd_nagios.side_effect = [0, 0, 1]
-        with self.assertRaises(check_collectd_mlab.NagiosStateError):
-            check_collectd_mlab.assert_collectd_nagios_levels()
-
-        mock_run_collectd_nagios.side_effect = [0, 0, 0, 1]
-        with self.assertRaises(check_collectd_mlab.NagiosStateError):
-            check_collectd_mlab.assert_collectd_nagios_levels()
-
-        mock_run_collectd_nagios.side_effect = [0, 0, 0, 0, 1]
-        with self.assertRaises(check_collectd_mlab.NagiosStateError):
-            check_collectd_mlab.assert_collectd_nagios_levels()
-
     @mock.patch('subprocess.Popen')
     def testcover_run_collectd_nagios(self, mock_popen):
         mock_popen.return_value.wait.return_value = 2
@@ -257,7 +241,6 @@ class MLabNagiosTests(unittest.TestCase):
         self.assertEqual(state, check_collectd_mlab.STATE_OK)
         self.assertTrue(mock_collectd_installed.called)
         self.assertTrue(mock_collectd_responds.called)
-        self.assertTrue(mock_vsys_setup.called)
         self.assertTrue(mock_collectd_nagios_levels.called)
         self.assertTrue(mock_last_sync_time.called)
 
@@ -278,7 +261,6 @@ class MLabNagiosTests(unittest.TestCase):
         self.assertEqual(message, 'error')
         self.assertTrue(mock_collectd_installed.called)
         self.assertTrue(mock_collectd_responds.called)
-        self.assertTrue(mock_vsys_setup.called)
         self.assertTrue(mock_collectd_nagios_levels.called)
         self.assertTrue(mock_last_sync_time.called)
 

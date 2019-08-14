@@ -57,21 +57,20 @@ import time
 # * collectd uses default pidfile name.
 # * collectd uses default unixsock name.
 SLICENAME = 'mlab_utility'
-COLLECTD_BIN = '/vservers/%s/usr/sbin/collectd' % SLICENAME
-COLLECTD_NAGIOS = '/vservers/%s/usr/bin/collectd-nagios' % SLICENAME
-COLLECTD_PID = '/vservers/%s/var/run/collectd.pid' % SLICENAME
-COLLECTD_UNIXSOCK = '/vservers/%s/var/run/collectd-unixsock' % SLICENAME
-LD_LIBRARY_PATH = '/vservers/%s/usr/lib' % SLICENAME
+COLLECTD_BIN = '/usr/sbin/collectd'
+COLLECTD_NAGIOS = '/usr/bin/collectd-nagios'
+COLLECTD_PID = '/var/run/collectd.pid'
+COLLECTD_UNIXSOCK = '/var/run/collectd-unixsock'
+LD_LIBRARY_PATH = '/usr/lib'
 
-HOSTNAME = socket.gethostname()
+HOSTNAME = os.environ.get('HOSTNAME', 'host.missing')
 VSYSPATH_ACL = '/vsys/vs_resource_backend.acl'
 VSYSPATH_BACKEND = '/vsys/vs_resource_backend'
-VSYSPATH_SLICE = '/vservers/%s/vsys/vs_resource_backend.in' % SLICENAME
+VSYSPATH_SLICE = '/vsys/vs_resource_backend.in'
 DEFAULT_TIMEOUT = 60
 
 # Switch and SNMP constants.
-SNMP_COMMUNITY = '/vservers/%s/home/%s/conf/snmp.community' % (SLICENAME,
-                                                               SLICENAME)
+SNMP_COMMUNITY = '/home/%s/conf/snmp.community' % (SLICENAME)
 SWITCHNAME = 's1.' + '.'.join(HOSTNAME.split('.')[1:])
 
 # Canonical, nagios exit codes.
@@ -314,7 +313,7 @@ def assert_collectd_responds():
     sock = sock_connect(COLLECTD_UNIXSOCK)
 
     # Can we request a value over socket?
-    val = sock_sendcmd(sock, 'GETVAL "%s/meta/timer-read"' % HOSTNAME)
+    val = sock_sendcmd(sock, 'GETVAL "%s/uptime/uptime"' % HOSTNAME)
     if val <= 0:
         raise SocketSendCommandError(
             'collectd unixsock is open, but sending GETVAL command failed.')
@@ -403,33 +402,10 @@ def assert_collectd_nagios_levels():
     # See: https://collectd.org/documentation/manpages/collectd-nagios.1.shtml
     # for a description of the range specifiation.
 
-    # Is utility slice quota ok?
-    exit_code = run_collectd_nagios('utility.mlab.' + HOSTNAME,
-                                    'storage/vs_quota_bytes-quota', 'used',
-                                    _mb_to_bytes(8000), _mb_to_bytes(9000))
-    if exit_code != 0:
-        raise NagiosStateError('Storage quota usage is too high', exit_code)
-
-    # Is collectd cpu usage too high?
-    exit_code = run_collectd_nagios(
-        HOSTNAME, 'meta-collectd/process_cpu-system', 'value', '0:5', '0:10')
-    if exit_code != 0:
-        raise NagiosStateError('Collectd CPU usage is too high', exit_code)
-
-    # Actual memory usage should be pretty small, though vm size may be larger.
-    exit_code = run_collectd_nagios(HOSTNAME,
-                                    'meta-collectd/process_memory-rss', 'value',
-                                    _mb_to_bytes(10), _mb_to_bytes(15))
-    if exit_code != 0:
-        raise NagiosStateError('Collectd RSS memory usage is too high',
-                               exit_code)
-
-    # Is meta timer too high?
-    exit_code = run_collectd_nagios(HOSTNAME, 'meta/timer-read', 'value', '0:6',
-                                    '0:100')
-    if exit_code != 0:
-        raise NagiosStateError('Collectd mlab plugin taking too long to run',
-                               exit_code)
+    # TODO: check ram usage
+    # TODO: check cpu load
+    # TODO: check storage usage
+    # TODO: check total collection times
 
     # Is DISCO collecting data? This does not check the values, only that they
     # are collected.
@@ -459,7 +435,6 @@ def check_collectd():
     try:
         assert_collectd_installed()
         assert_collectd_responds()
-        assert_collectd_vsys_setup()
         assert_disk_last_sync_time()
     except CriticalError as err:
         return (STATE_CRITICAL, str(err))
