@@ -1,10 +1,10 @@
-# Determine collectd-mlab status and write it to a Prometheus node_exporter
+# Determine collectd-mlab status and write it to a Prometheus node-exporter
 # file.
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 SCRIPT=/usr/lib/nagios/plugins/check_collectd_mlab.py
-PROM_FILE=/var/spool/node_exporter/collectd.prom
+PROM_FILE=/var/spool/node-exporter/collectd.prom
 PROM_METRIC='collectd_mlab_success{experiment="utility.mlab"}'
 
 # Check the status of collectd-mlab every minute. The script's return code
