@@ -629,7 +629,7 @@ def init_args(options, ts_previous):
         rsync_name = options.suffix
         if options.suffix == 'metrics':
             # A legacy name. Ideally, suffix and rsync_name should be the same.
-            rsync_name = 'utilization'
+            rsync_name = 'system'
 
         options.output = default_output_name(options.ts_start, options.ts_end,
                                              options.output_dir, rsync_name,
