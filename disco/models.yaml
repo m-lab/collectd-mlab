@@ -44,6 +44,23 @@ models:
               # JUNIPER-COS-MIB::jnxCosQstatTotalDropPkts.${jnxCosQstatIfIndex}.0
               tx: .1.3.6.1.4.1.2636.3.15.4.1.53.{ifIndex}.0
 
+    # Juniper EX4200.
+    - !model
+      name: ex4200
+      pattern: ex4200
+      qbridge: true
+      vlan: false
+      oids:
+          discards:
+              !oid
+              rx: RFC1213-MIB::ifInDiscards.{ifIndex}
+              # The Juniper QFX switch uses standard OIDs for monitoring except
+              # for a 64-bit, vendor MIB for output discards. The symbolic MIB
+              # is unknown to the library used by collectd-snmp, so use dot
+              # notation. Symbolic:
+              # JUNIPER-COS-MIB::jnxCosQstatTotalDropPkts.${jnxCosQstatIfIndex}.0
+              tx: .1.3.6.1.4.1.2636.3.15.4.1.53.{ifIndex}.0
+
     # All known Cisco models.
     - !model
       name: cisco
