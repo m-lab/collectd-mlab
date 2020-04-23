@@ -6,7 +6,7 @@ convenience variables.
 ```
 ssh mlab_utility@mlab1.{site}.measurement-lab.org
 COMM=`cat /home/mlab_utility/conf/snmp.community.updated`
-SWITCH="s1.${HOSTNAME#*.}"
+SWITCH="s1-${HOSTNAME:6:5}.measurement-lab.org"
 ```
 
 ## Running Disco config manually

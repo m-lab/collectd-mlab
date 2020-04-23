@@ -7,7 +7,7 @@
 COLLECTD_SNMP="/etc/collectd-snmp.conf"
 COMMUNITY="/home/mlab_utility/conf/snmp.community"
 HOSTNAME=`cat /home/mlab_utility/conf/hostname`
-SWITCH="s1.${HOSTNAME#*.}"
+SWITCH="s1-${HOSTNAME:6:5}.measurement-lab.org"
 
 
 # If the community string file is missing or zero size.

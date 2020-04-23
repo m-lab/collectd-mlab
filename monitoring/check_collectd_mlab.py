@@ -71,7 +71,7 @@ DEFAULT_TIMEOUT = 60
 
 # Switch and SNMP constants.
 SNMP_COMMUNITY = '/home/%s/conf/snmp.community' % (SLICENAME)
-SWITCHNAME = 's1.' + '.'.join(HOSTNAME.split('.')[1:])
+SWITCHNAME = 's1-' + HOSTNAME[6:11] + '.measurement-lab.org'
 
 # Canonical, nagios exit codes.
 STATE_OK = 0
