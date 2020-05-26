@@ -4,6 +4,7 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 SCRIPT=/usr/lib/nagios/plugins/check_collectd_mlab.py
+LOG_FILE=/var/log/check_collectd_mlab.log
 PROM_FILE=/var/spool/node-exporter/collectd.prom
 PROM_METRIC='collectd_mlab_success{experiment="utility.mlab"}'
 
@@ -13,4 +14,4 @@ PROM_METRIC='collectd_mlab_success{experiment="utility.mlab"}'
 # failure as 0. The following command makes that conversion so that status is
 # more consistent with other Prometheus metrics.
 
-*/5 * * * * root source /etc/profile; $SCRIPT &> /dev/null; if [[ $? == "0" ]]; then echo "${PROM_METRIC} 1" > $PROM_FILE; else echo "${PROM_METRIC} 0" > $PROM_FILE; fi
+*/5 * * * * root source /etc/profile; $SCRIPT &>> $LOG_FILE; if [[ $? == "0" ]]; then echo "${PROM_METRIC} 1" > $PROM_FILE; else echo "${PROM_METRIC} 0" > $PROM_FILE; fi
